@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import type { LoginRequest, SignupRequest } from "../types/index";
-import { requestPasswordReset, signIn, signOut } from "../lib/auth-client";
+import { requestPasswordReset, signIn, signOut, signUp } from "../lib/auth-client";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
 
@@ -22,7 +22,7 @@ export const useLogin = () => {
 export const useSignup = () => {
   const navigate = useNavigate();
   return useMutation({
-    mutationFn: (payload: SignupRequest) => signIn.email(payload),
+    mutationFn: (payload: SignupRequest) => signUp.email(payload),
     onSuccess: (cb) => {
       if (cb.error) {
         toast.error(cb.error.message);

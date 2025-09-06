@@ -8,9 +8,12 @@ import { Toaster } from "./components/ui/sonner";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: (failureCount, error: any) => {
-        if (error?.response?.status === 401) {
-          return false;
+      retry: (failureCount, error: unknown) => {
+        if (error && typeof error === 'object' && 'response' in error) {
+          const httpError = error as { response?: { status?: number } };
+          if (httpError.response?.status === 401) {
+            return false;
+          }
         }
         return failureCount < 3;
       },
