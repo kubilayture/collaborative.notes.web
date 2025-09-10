@@ -4,6 +4,7 @@ import AuthPage from "./pages/auth/AuthPage";
 import { NotesListPage } from "./pages/notes/NotesListPage";
 import { NoteEditorPage } from "./pages/notes/NoteEditorPage";
 import { NewNotePage } from "./pages/notes/NewNotePage";
+import { FriendsPage } from "./pages/friends/FriendsPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { HomePage } from "./pages/HomePage";
 import { AuthenticatedRoute } from "./components/auth/AuthenticatedRoute";
@@ -53,6 +54,14 @@ export const RoutesContainer = () => {
           element={
             <ProtectedRoute>
               <NoteEditorPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="friends"
+          element={
+            <ProtectedRoute>
+              <FriendsPage />
             </ProtectedRoute>
           }
         />
