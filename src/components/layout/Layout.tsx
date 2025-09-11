@@ -6,10 +6,9 @@ import {
   DropdownMenu, 
   DropdownMenuContent, 
   DropdownMenuItem, 
-  DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "../ui/dropdown-menu";
-import { FileText, Users, User, LogOut, Home } from "lucide-react";
+import { FileText, Users, User, LogOut, Home, MessageSquare } from "lucide-react";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -21,7 +20,12 @@ const Layout = () => {
     navigate("/login");
   };
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => {
+    if (path === "/messaging") {
+      return location.pathname === path || location.pathname.startsWith("/messaging/");
+    }
+    return location.pathname === path;
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -57,6 +61,14 @@ const Layout = () => {
                   >
                     <Users className="h-4 w-4 mr-2" />
                     Friends
+                  </Button>
+                  <Button 
+                    variant={isActive("/messaging") ? "default" : "ghost"} 
+                    size="sm"
+                    onClick={() => navigate("/messaging")}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Messages
                   </Button>
                 </div>
               )}

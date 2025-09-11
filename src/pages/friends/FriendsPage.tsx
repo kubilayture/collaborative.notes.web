@@ -169,7 +169,7 @@ export function FriendsPage() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {friends.map((friendItem, index) => {
+              {friends.map((friendItem) => {
                 return (
                   <Card key={friendItem.friend.id}>
                     <CardHeader className="pb-3">

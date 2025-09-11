@@ -26,7 +26,6 @@ import {
   Pencil
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { toast } from "sonner";
 
 export function NoteEditorPage() {
   const { noteId } = useParams<{ noteId: string }>();

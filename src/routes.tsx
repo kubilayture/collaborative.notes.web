@@ -5,6 +5,8 @@ import { NotesListPage } from "./pages/notes/NotesListPage";
 import { NoteEditorPage } from "./pages/notes/NoteEditorPage";
 import { NewNotePage } from "./pages/notes/NewNotePage";
 import { FriendsPage } from "./pages/friends/FriendsPage";
+import { MessagingPage } from "./pages/messaging/MessagingPage";
+import { ThreadPage } from "./pages/messaging/ThreadPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { HomePage } from "./pages/HomePage";
 import { AuthenticatedRoute } from "./components/auth/AuthenticatedRoute";
@@ -62,6 +64,22 @@ export const RoutesContainer = () => {
           element={
             <ProtectedRoute>
               <FriendsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="messaging"
+          element={
+            <ProtectedRoute>
+              <MessagingPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="messaging/:threadId"
+          element={
+            <ProtectedRoute>
+              <ThreadPage />
             </ProtectedRoute>
           }
         />
