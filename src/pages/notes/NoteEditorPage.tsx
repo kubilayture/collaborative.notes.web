@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
+import { useQueryClient } from "@tanstack/react-query";
 import { useNote, useUpdateNote, useDeleteNote, contentToText } from "../../hooks/notes.hook";
 import { useSession } from "../../lib/auth-client";
+import { CollaborativeEditor } from "../../components/editor/CollaborativeEditor";
+import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
@@ -31,29 +34,40 @@ export function NoteEditorPage() {
   const { noteId } = useParams<{ noteId: string }>();
   const navigate = useNavigate();
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
   
   const { data: note, isLoading, error, refetch } = useNote(noteId!);
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
+
+  useEffect(() => {
+    if (noteId) {
+      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    }
+  }, [noteId, queryClient]);
   
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
+  const [editorContent, setEditorContent] = useState("");
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   useEffect(() => {
     if (note) {
       setTitle(note.title);
       setContent(contentToText(note.content));
+      setEditorContent(contentToText(note.content));
     }
   }, [note]);
 
   useEffect(() => {
     if (note) {
       const titleChanged = title !== note.title;
-      const contentChanged = content !== contentToText(note.content);
+      const contentChanged = editorContent !== contentToText(note.content);
       setHasChanges(titleChanged || contentChanged);
     }
-  }, [title, content, note]);
+  }, [title, editorContent, note]);
 
   if (isLoading) return <Loading />;
   if (error) return <Error message="Failed to load note" onRetry={refetch} />;
@@ -71,7 +85,7 @@ export function NoteEditorPage() {
       id: note.id,
       data: {
         title: title.trim(),
-        content: content.trim(),
+        content: editorContent.trim(),
       }
     });
   };
@@ -83,9 +97,6 @@ export function NoteEditorPage() {
   };
 
   const handleBack = () => {
-    if (hasChanges && !window.confirm("You have unsaved changes. Are you sure you want to leave?")) {
-      return;
-    }
     navigate("/notes");
   };
 
@@ -137,7 +148,7 @@ export function NoteEditorPage() {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setShareDialogOpen(true)}>
                   <Users className="h-4 w-4 mr-2" />
                   Share & Permissions
                 </DropdownMenuItem>
@@ -200,18 +211,16 @@ export function NoteEditorPage() {
             )}
           </div>
           
-          <textarea
-            id="content"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            className="min-h-[500px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 resize-none"
-            placeholder="Start writing..."
-            disabled={!canEdit}
+          <CollaborativeEditor
+            noteId={note.id}
+            initialContent={contentToText(note.content)}
+            editable={canEdit}
+            onUpdate={setEditorContent}
           />
           
           <p className="text-xs text-muted-foreground">
             {canEdit ? (
-              "Changes are saved manually. Rich text collaborative editing will be available soon."
+              "Real-time collaborative editing enabled. Changes are synced automatically and saved manually."
             ) : (
               "You don't have edit permissions for this note."
             )}
@@ -227,6 +236,13 @@ export function NoteEditorPage() {
           </Button>
         </div>
       )}
+
+      {/* Share & Permissions Dialog */}
+      <SharePermissionsDialog
+        note={note}
+        open={shareDialogOpen}
+        onOpenChange={setShareDialogOpen}
+      />
     </div>
   );
 }

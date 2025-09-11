@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "../../lib/auth-client";
 import { useNotes, useDeleteNote, type Note, contentToText } from "../../hooks/notes.hook";
 import { Button } from "../../components/ui/button";
@@ -21,9 +22,14 @@ import { formatDistanceToNow } from "date-fns";
 export function NotesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const { data: session } = useSession();
+  const queryClient = useQueryClient();
   const { data: notes, isLoading, error, refetch } = useNotes();
   const deleteNote = useDeleteNote();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    queryClient.invalidateQueries({ queryKey: ['notes'] });
+  }, [queryClient]);
 
   if (isLoading) return <Loading />;
   if (error) return <Error message="Failed to load notes" onRetry={refetch} />;
@@ -111,7 +117,11 @@ export function NotesListPage() {
             const isOwner = note.ownerId === session?.user?.id;
             
             return (
-              <Card key={note.id} className="group hover:shadow-md transition-shadow">
+              <Card 
+                key={note.id} 
+                className="group hover:shadow-md transition-shadow cursor-pointer" 
+                onClick={() => navigate(`/notes/${note.id}`)}
+              >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">
                     <div className="flex-1 min-w-0">
@@ -130,13 +140,17 @@ export function NotesListPage() {
                           variant="ghost" 
                           size="sm" 
                           className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
                         <DropdownMenuItem 
-                          onClick={() => navigate(`/notes/${note.id}`)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            navigate(`/notes/${note.id}`);
+                          }}
                         >
                           <Edit className="h-4 w-4 mr-2" />
                           {canEditNote(note) ? "Edit" : "View"}
@@ -145,7 +159,10 @@ export function NotesListPage() {
                           <>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              onClick={() => handleDeleteNote(note.id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteNote(note.id);
+                              }}
                               className="text-destructive focus:text-destructive"
                               disabled={deleteNote.isPending}
                             >
@@ -159,10 +176,7 @@ export function NotesListPage() {
                   </div>
                 </CardHeader>
                 
-                <CardContent 
-                  className="cursor-pointer" 
-                  onClick={() => navigate(`/notes/${note.id}`)}
-                >
+                <CardContent>
                   <div className="mb-4">
                     <p className="text-sm text-muted-foreground line-clamp-3">
                       {contentToText(note.content) || "No content"}

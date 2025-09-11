@@ -9,14 +9,33 @@ const textToContent = (text: string): NoteContent => ({
   data: text,
 });
 
+const stripHtmlTags = (html: string): string => {
+  if (typeof window !== 'undefined') {
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = html;
+    return tempDiv.textContent || tempDiv.innerText || '';
+  }
+  return html.replace(/<[^>]*>/g, '').trim();
+};
+
 export const contentToText = (content: NoteContent): string => {
   if (!content) return "";
+  
+  let rawContent = "";
   if (content.type === "text" && typeof content.data === "string") {
-    return content.data;
+    rawContent = content.data;
+  } else if (typeof content.data === "string") {
+    rawContent = content.data;
+  } else {
+    rawContent = JSON.stringify(content.data); // Fallback for complex objects
   }
-  // For rich text formats, we might need different extraction logic
-  if (typeof content.data === "string") return content.data;
-  return JSON.stringify(content.data); // Fallback for complex objects
+  
+  // Strip HTML tags if the content contains HTML
+  if (rawContent.includes('<') && rawContent.includes('>')) {
+    return stripHtmlTags(rawContent);
+  }
+  
+  return rawContent;
 };
 
 export interface NoteContent {

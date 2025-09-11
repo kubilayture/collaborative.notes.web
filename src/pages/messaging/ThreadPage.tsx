@@ -79,7 +79,6 @@ export function ThreadPage() {
   } = useMessages(threadId);
   const { data: friends } = useFriends();
 
-  const sendMessage = useSendMessage();
   const deleteMessage = useDeleteMessage();
   const addParticipant = useAddParticipant();
   const leaveThread = useLeaveThread();
@@ -101,7 +100,7 @@ export function ThreadPage() {
     emit("thread:join", { threadId });
 
     // Listen for new messages
-    const handleNewMessage = (message: any) => {
+    const handleNewMessage = (message: unknown) => {
       console.log("Received new message:", message);
       // Invalidate and refetch messages when a new message is received
       queryClient.invalidateQueries({ 
@@ -141,7 +140,7 @@ export function ThreadPage() {
       off("message:new", handleNewMessage);
       off("message:typing", handleUserTyping);
     };
-  }, [threadId, isConnected, session?.user?.id, emit, on, off]);
+  }, [threadId, isConnected, session?.user?.id, emit, on, off, queryClient]);
 
   // Handle typing indicator
   const handleTyping = () => {

@@ -4,6 +4,8 @@ import AuthPage from "./pages/auth/AuthPage";
 import { NotesListPage } from "./pages/notes/NotesListPage";
 import { NoteEditorPage } from "./pages/notes/NoteEditorPage";
 import { NewNotePage } from "./pages/notes/NewNotePage";
+import { AcceptInvitationPage } from "./pages/invitations/AcceptInvitationPage";
+import { InvitationsPage } from "./pages/invitations/InvitationsPage";
 import { FriendsPage } from "./pages/friends/FriendsPage";
 import { MessagingPage } from "./pages/messaging/MessagingPage";
 import { ThreadPage } from "./pages/messaging/ThreadPage";
@@ -68,6 +70,14 @@ export const RoutesContainer = () => {
           }
         />
         <Route
+          path="invitations"
+          element={
+            <ProtectedRoute>
+              <InvitationsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="messaging"
           element={
             <ProtectedRoute>
@@ -81,6 +91,12 @@ export const RoutesContainer = () => {
             <ProtectedRoute>
               <ThreadPage />
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="invite/:token"
+          element={
+            <AcceptInvitationPage />
           }
         />
       </Route>

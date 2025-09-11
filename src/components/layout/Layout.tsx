@@ -8,7 +8,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "../ui/dropdown-menu";
-import { FileText, Users, User, LogOut, Home, MessageSquare } from "lucide-react";
+import { FileText, Users, User, LogOut, Home, MessageSquare, Mail } from "lucide-react";
 
 const Layout = () => {
   const navigate = useNavigate();
@@ -61,6 +61,14 @@ const Layout = () => {
                   >
                     <Users className="h-4 w-4 mr-2" />
                     Friends
+                  </Button>
+                  <Button 
+                    variant={isActive("/invitations") ? "default" : "ghost"} 
+                    size="sm"
+                    onClick={() => navigate("/invitations")}
+                  >
+                    <Mail className="h-4 w-4 mr-2" />
+                    Invitations
                   </Button>
                   <Button 
                     variant={isActive("/messaging") ? "default" : "ghost"} 
