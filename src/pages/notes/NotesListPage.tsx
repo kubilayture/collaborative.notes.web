@@ -16,11 +16,14 @@ import {
 import { useNavigate } from "react-router";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
-import { Plus, Search, MoreVertical, Edit, Trash2, Users, Calendar } from "lucide-react";
+import { Plus, Search, MoreVertical, Trash2, Users, Calendar, Share2 } from "lucide-react";
+import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
 import { formatDistanceToNow } from "date-fns";
 
 export function NotesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareNote, setShareNote] = useState<Note | null>(null);
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { data: notes, isLoading, error, refetch } = useNotes();
@@ -146,14 +149,15 @@ export function NotesListPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem 
+                        <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
-                            navigate(`/notes/${note.id}`);
+                            setShareNote(note);
+                            setShareOpen(true);
                           }}
                         >
-                          <Edit className="h-4 w-4 mr-2" />
-                          {canEditNote(note) ? "Edit" : "View"}
+                          <Share2 className="h-4 w-4 mr-2" />
+                          Share & Permissions
                         </DropdownMenuItem>
                         {canDeleteNote(note) && (
                           <>
@@ -205,6 +209,16 @@ export function NotesListPage() {
             );
           })}
         </div>
+      )}
+      {shareNote && (
+        <SharePermissionsDialog
+          note={shareNote}
+          open={shareOpen}
+          onOpenChange={(o) => {
+            setShareOpen(o);
+            if (!o) setShareNote(null);
+          }}
+        />
       )}
     </div>
   );
