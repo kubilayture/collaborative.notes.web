@@ -2,18 +2,29 @@ import { Outlet, useNavigate, useLocation } from "react-router";
 import { ThemeToggle } from "../common/ThemeToggle";
 import { useSession, signOut } from "../../lib/auth-client";
 import { Button } from "../ui/button";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { FileText, Users, User, LogOut, Home, MessageSquare, Mail } from "lucide-react";
+import {
+  FileText,
+  Users,
+  User,
+  LogOut,
+  Home,
+  MessageSquare,
+  Mail,
+} from "lucide-react";
+import { useNotificationCounts } from "../../hooks/notifications.hook";
+import { Badge } from "../ui/badge";
 
 const Layout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { data: session } = useSession();
+  const { data: counts } = useNotificationCounts();
 
   const handleSignOut = async () => {
     await signOut();
@@ -22,7 +33,10 @@ const Layout = () => {
 
   const isActive = (path: string) => {
     if (path === "/messaging") {
-      return location.pathname === path || location.pathname.startsWith("/messaging/");
+      return (
+        location.pathname === path ||
+        location.pathname.startsWith("/messaging/")
+      );
     }
     return location.pathname === path;
   };
@@ -38,45 +52,75 @@ const Layout = () => {
               </div>
               {session && (
                 <div className="hidden md:flex items-center space-x-4">
-                  <Button 
-                    variant={isActive("/") ? "default" : "ghost"} 
+                  <Button
+                    variant={isActive("/") ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate("/")}
                   >
                     <Home className="h-4 w-4 mr-2" />
                     Home
                   </Button>
-                  <Button 
-                    variant={isActive("/notes") ? "default" : "ghost"} 
+                  <Button
+                    variant={isActive("/notes") ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate("/notes")}
                   >
                     <FileText className="h-4 w-4 mr-2" />
                     Notes
                   </Button>
-                  <Button 
-                    variant={isActive("/friends") ? "default" : "ghost"} 
+                  <Button
+                    variant={isActive("/friends") ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate("/friends")}
                   >
-                    <Users className="h-4 w-4 mr-2" />
-                    Friends
+                    <div className="relative flex items-center">
+                      <Users className="h-4 w-4 mr-2" />
+                      Friends
+                      {!!counts?.friends && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-2 h-5 min-w-[20px] px-1"
+                        >
+                          {counts.friends}
+                        </Badge>
+                      )}
+                    </div>
                   </Button>
-                  <Button 
-                    variant={isActive("/invitations") ? "default" : "ghost"} 
+                  <Button
+                    variant={isActive("/invitations") ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate("/invitations")}
                   >
-                    <Mail className="h-4 w-4 mr-2" />
-                    Invitations
+                    <div className="relative flex items-center">
+                      <Mail className="h-4 w-4 mr-2" />
+                      Invitations
+                      {!!counts?.invitations && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-2 h-5 min-w-[20px] px-1"
+                        >
+                          {counts.invitations}
+                        </Badge>
+                      )}
+                    </div>
                   </Button>
-                  <Button 
-                    variant={isActive("/messaging") ? "default" : "ghost"} 
+                  <Button
+                    variant={isActive("/messaging") ? "default" : "ghost"}
                     size="sm"
                     onClick={() => navigate("/messaging")}
                   >
-                    <MessageSquare className="h-4 w-4 mr-2" />
-                    Messages
+                    <div className="relative flex items-center">
+                      <MessageSquare className="h-4 w-4 mr-2" />
+                      Messages
+                      {!!counts?.messages && (
+                        <Badge
+                          variant="destructive"
+                          className="ml-2 h-5 min-w-[20px] px-1"
+                        >
+                          {counts.messages}
+                        </Badge>
+                      )}
+                    </div>
                   </Button>
                 </div>
               )}
@@ -87,7 +131,11 @@ const Layout = () => {
               {session ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-2">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex items-center space-x-2"
+                    >
                       <User className="h-4 w-4" />
                       <span>{session.user.name}</span>
                     </Button>
@@ -100,9 +148,7 @@ const Layout = () => {
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
-                <Button onClick={() => navigate("/login")}>
-                  Sign In
-                </Button>
+                <Button onClick={() => navigate("/login")}>Sign In</Button>
               )}
             </div>
           </div>

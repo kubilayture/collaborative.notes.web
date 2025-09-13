@@ -1,6 +1,11 @@
 import { useSession } from "../lib/auth-client";
 import { Button } from "../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
 import { useNavigate } from "react-router";
 import { useLogout } from "../hooks/auth.hook";
 
@@ -29,15 +34,12 @@ export function HomePage() {
               Please log in to access your notes and start collaborating.
             </p>
             <div className="flex gap-2">
-              <Button 
-                onClick={() => navigate("/login")} 
-                className="flex-1"
-              >
+              <Button onClick={() => navigate("/login")} className="flex-1">
                 Log In
               </Button>
-              <Button 
-                onClick={() => navigate("/sign-up")} 
-                variant="outline" 
+              <Button
+                onClick={() => navigate("/sign-up")}
+                variant="outline"
                 className="flex-1"
               >
                 Sign Up
@@ -53,7 +55,9 @@ export function HomePage() {
     <div className="container mx-auto p-4">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome back, {session.user.name}!</h1>
+          <h1 className="text-3xl font-bold">
+            Welcome back, {session.user.name}!
+          </h1>
           <p className="text-muted-foreground">
             Ready to collaborate on your notes?
           </p>
@@ -68,7 +72,7 @@ export function HomePage() {
           <CardHeader>
             <CardTitle>My Notes</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col h-full justify-between">
             <p className="text-muted-foreground mb-4">
               Access and manage your collaborative notes.
             </p>
@@ -82,11 +86,15 @@ export function HomePage() {
           <CardHeader>
             <CardTitle>Friends</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col h-full justify-between">
             <p className="text-muted-foreground mb-4">
               Manage your friends and send collaboration invites.
             </p>
-            <Button onClick={() => navigate("/friends")} className="w-full" variant="outline">
+            <Button
+              onClick={() => navigate("/friends")}
+              className="w-full"
+              variant="outline"
+            >
               Manage Friends
             </Button>
           </CardContent>
@@ -96,11 +104,15 @@ export function HomePage() {
           <CardHeader>
             <CardTitle>Messages</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="flex flex-col h-full justify-between">
             <p className="text-muted-foreground mb-4">
               Chat with your collaborators in real-time.
             </p>
-            <Button onClick={() => navigate("/messages")} className="w-full" variant="outline">
+            <Button
+              onClick={() => navigate("/messages")}
+              className="w-full"
+              variant="outline"
+            >
               View Messages
             </Button>
           </CardContent>

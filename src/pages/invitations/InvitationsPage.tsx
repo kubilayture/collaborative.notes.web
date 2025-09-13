@@ -1,10 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Button } from '../../components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Mail, Clock, FileText, User, Check, X } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
-import { toast } from 'sonner';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useMarkAllRead } from "../../hooks/notifications.hook";
+import { Button } from "../../components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Mail, Clock, FileText, User, Check, X } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
 
 interface Invitation {
   id: string;
@@ -26,33 +34,55 @@ interface Invitation {
     email: string;
   };
   inviteeEmail: string;
-  role: 'VIEWER' | 'COMMENTER' | 'EDITOR';
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  role: "VIEWER" | "COMMENTER" | "EDITOR";
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED";
   expiresAt: string;
   createdAt: string;
 }
 
 const getRoleInfo = (role: string) => {
   const roleLabels = {
-    VIEWER: { label: 'Viewer', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
-    COMMENTER: { label: 'Commenter', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' },
-    EDITOR: { label: 'Editor', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
+    VIEWER: {
+      label: "Viewer",
+      color: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
+    },
+    COMMENTER: {
+      label: "Commenter",
+      color:
+        "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300",
+    },
+    EDITOR: {
+      label: "Editor",
+      color:
+        "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300",
+    },
   };
-  return roleLabels[role as keyof typeof roleLabels] || roleLabels.VIEWER;
+  const key = (role || "").toUpperCase() as keyof typeof roleLabels;
+  return roleLabels[key] || roleLabels.VIEWER;
 };
 
 export function InvitationsPage() {
   const queryClient = useQueryClient();
+  const markAllRead = useMarkAllRead();
+
+  // Reset invitation notifications on view (must run before any early returns)
+  useEffect(() => {
+    markAllRead.mutate("note_invitation");
+  }, []);
 
   // Fetch my pending invitations
-  const { data: invitations = [], isLoading, error } = useQuery({
-    queryKey: ['my-invitations'],
+  const {
+    data: invitations = [],
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["my-invitations"],
     queryFn: async (): Promise<Invitation[]> => {
-      const response = await fetch('/api/invitations', {
-        credentials: 'include',
+      const response = await fetch("/api/invitations", {
+        credentials: "include",
       });
       if (!response.ok) {
-        throw new Error('Failed to fetch invitations');
+        throw new Error("Failed to fetch invitations");
       }
       return response.json();
     },
@@ -62,20 +92,20 @@ export function InvitationsPage() {
   const acceptInvitation = useMutation({
     mutationFn: async (token: string) => {
       const response = await fetch(`/api/invitations/${token}/accept`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
       if (!response.ok) {
-        throw new Error('Failed to accept invitation');
+        throw new Error("Failed to accept invitation");
       }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-invitations'] });
-      toast.success('Invitation accepted successfully!');
+      queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
+      toast.success("Invitation accepted successfully!");
     },
     onError: () => {
-      toast.error('Failed to accept invitation');
+      toast.error("Failed to accept invitation");
     },
   });
 
@@ -83,20 +113,20 @@ export function InvitationsPage() {
   const declineInvitation = useMutation({
     mutationFn: async (token: string) => {
       const response = await fetch(`/api/invitations/${token}/decline`, {
-        method: 'POST',
-        credentials: 'include',
+        method: "POST",
+        credentials: "include",
       });
       if (!response.ok) {
-        throw new Error('Failed to decline invitation');
+        throw new Error("Failed to decline invitation");
       }
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-invitations'] });
-      toast.success('Invitation declined');
+      queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
+      toast.success("Invitation declined");
     },
     onError: () => {
-      toast.error('Failed to decline invitation');
+      toast.error("Failed to decline invitation");
     },
   });
 
@@ -143,8 +173,9 @@ export function InvitationsPage() {
         <div className="space-y-4">
           {invitations.map((invitation) => {
             const roleInfo = getRoleInfo(invitation.role);
+            const status = (invitation.status || "").toUpperCase();
             const isExpired = new Date(invitation.expiresAt) < new Date();
-            
+
             return (
               <Card key={invitation.id} className="relative">
                 <CardHeader>
@@ -156,12 +187,11 @@ export function InvitationsPage() {
                       </CardTitle>
                       <CardDescription className="flex items-center gap-2">
                         <User className="h-4 w-4" />
-                        Invited by {invitation.inviter.name} ({invitation.inviter.email})
+                        Invited by {invitation.inviter.name} (
+                        {invitation.inviter.email})
                       </CardDescription>
                     </div>
-                    <Badge className={roleInfo.color}>
-                      {roleInfo.label}
-                    </Badge>
+                    <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -169,20 +199,26 @@ export function InvitationsPage() {
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Sent {formatDistanceToNow(new Date(invitation.createdAt), { addSuffix: true })}
+                        Sent{" "}
+                        {formatDistanceToNow(new Date(invitation.createdAt), {
+                          addSuffix: true,
+                        })}
                       </div>
                       <div className="flex items-center gap-1">
                         <Clock className="h-4 w-4" />
-                        Expires {formatDistanceToNow(new Date(invitation.expiresAt))}
+                        Expires{" "}
+                        {formatDistanceToNow(new Date(invitation.expiresAt))}
                       </div>
                     </div>
-                    
-                    {invitation.status === 'PENDING' && !isExpired ? (
+
+                    {status === "PENDING" && !isExpired ? (
                       <div className="flex gap-2">
                         <Button
                           size="sm"
                           variant="outline"
-                          onClick={() => declineInvitation.mutate(invitation.token)}
+                          onClick={() =>
+                            declineInvitation.mutate(invitation.token)
+                          }
                           disabled={declineInvitation.isPending}
                         >
                           <X className="h-4 w-4 mr-1" />
@@ -190,7 +226,9 @@ export function InvitationsPage() {
                         </Button>
                         <Button
                           size="sm"
-                          onClick={() => acceptInvitation.mutate(invitation.token)}
+                          onClick={() =>
+                            acceptInvitation.mutate(invitation.token)
+                          }
                           disabled={acceptInvitation.isPending}
                         >
                           <Check className="h-4 w-4 mr-1" />
@@ -199,7 +237,7 @@ export function InvitationsPage() {
                       </div>
                     ) : (
                       <Badge variant="secondary">
-                        {isExpired ? 'Expired' : invitation.status}
+                        {isExpired ? "Expired" : status}
                       </Badge>
                     )}
                   </div>

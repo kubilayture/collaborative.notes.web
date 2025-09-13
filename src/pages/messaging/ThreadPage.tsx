@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "../../lib/auth-client";
 import { useWebSocket } from "../../hooks/useWebSocket";
+import { useMarkThreadMessagesRead } from "../../hooks/notifications.hook";
 import {
   useThread,
   useMessages,
@@ -13,10 +14,7 @@ import {
 } from "../../hooks/messaging.hook";
 import { useFriends } from "../../hooks/friends.hook";
 import { Button } from "../../components/ui/button";
-import {
-  Card,
-  CardContent,
-} from "../../components/ui/card";
+import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
 import {
@@ -66,6 +64,7 @@ export function ThreadPage() {
   const [typingUsers, setTypingUsers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const markThreadRead = useMarkThreadMessagesRead();
 
   const {
     data: thread,
@@ -103,12 +102,26 @@ export function ThreadPage() {
     const handleNewMessage = (message: unknown) => {
       console.log("Received new message:", message);
       // Invalidate and refetch messages when a new message is received
-      queryClient.invalidateQueries({ 
-        queryKey: ["messaging", "threads", threadId, "messages"] 
+      queryClient.invalidateQueries({
+        queryKey: ["messaging", "threads", threadId, "messages"],
       });
       // Also invalidate the threads list to update last message preview
-      queryClient.invalidateQueries({ 
-        queryKey: ["messaging", "threads"] 
+      queryClient.invalidateQueries({
+        queryKey: ["messaging", "threads"],
+      });
+    };
+
+    // Listen for deletions
+    const handleDeleted = (data: { messageId: string }) => {
+      queryClient.invalidateQueries({
+        queryKey: ["messaging", "threads", threadId, "messages"],
+      });
+    };
+
+    // Listen for edits
+    const handleEdited = (_message: unknown) => {
+      queryClient.invalidateQueries({
+        queryKey: ["messaging", "threads", threadId, "messages"],
       });
     };
 
@@ -125,7 +138,9 @@ export function ThreadPage() {
 
       setTypingUsers((prev) => {
         if (data.isTyping) {
-          return prev.includes(data.user.name) ? prev : [...prev, data.user.name];
+          return prev.includes(data.user.name)
+            ? prev
+            : [...prev, data.user.name];
         } else {
           return prev.filter((name) => name !== data.user.name);
         }
@@ -134,11 +149,15 @@ export function ThreadPage() {
 
     on("message:new", handleNewMessage);
     on("message:typing", handleUserTyping);
+    on("message:deleted", handleDeleted);
+    on("message:edited", handleEdited);
 
     return () => {
       emit("thread:leave", { threadId });
       off("message:new", handleNewMessage);
       off("message:typing", handleUserTyping);
+      off("message:deleted", handleDeleted);
+      off("message:edited", handleEdited);
     };
   }, [threadId, isConnected, session?.user?.id, emit, on, off, queryClient]);
 
@@ -176,6 +195,13 @@ export function ThreadPage() {
     // Clear input immediately for better UX
     setNewMessage("");
   };
+
+  // Mark thread notifications as read when viewing
+  useEffect(() => {
+    if (threadId) {
+      markThreadRead.mutate(threadId);
+    }
+  }, [threadId]);
 
   const handleDeleteMessage = (messageId: string) => {
     if (window.confirm("Are you sure you want to delete this message?")) {
@@ -255,12 +281,20 @@ export function ThreadPage() {
         <div className="flex items-center gap-2">
           <div className="flex flex-wrap gap-1">
             {thread.participants.slice(0, 3).map((participant) => (
-              <Badge key={participant.user.id} variant="outline" className="text-xs">
+              <Badge
+                key={participant.user.id}
+                variant="outline"
+                className="text-xs"
+              >
                 {participant.user.name}
               </Badge>
             ))}
             {thread.participants.length > 3 && (
-              <Badge key="more-participants" variant="outline" className="text-xs">
+              <Badge
+                key="more-participants"
+                variant="outline"
+                className="text-xs"
+              >
                 +{thread.participants.length - 3} more
               </Badge>
             )}
@@ -289,8 +323,13 @@ export function ThreadPage() {
                   </DialogHeader>
                   <div className="space-y-4">
                     <div>
-                      <label className="text-sm font-medium">Select Friend</label>
-                      <Select value={selectedFriend} onValueChange={setSelectedFriend}>
+                      <label className="text-sm font-medium">
+                        Select Friend
+                      </label>
+                      <Select
+                        value={selectedFriend}
+                        onValueChange={setSelectedFriend}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a friend to add" />
                         </SelectTrigger>
@@ -300,7 +339,8 @@ export function ThreadPage() {
                               key={friendItem.friend.id}
                               value={friendItem.friend.id}
                             >
-                              {friendItem.friend.name} ({friendItem.friend.email})
+                              {friendItem.friend.name} (
+                              {friendItem.friend.email})
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -312,7 +352,9 @@ export function ThreadPage() {
                         disabled={!selectedFriend || addParticipant.isPending}
                         className="flex-1"
                       >
-                        {addParticipant.isPending ? "Adding..." : "Add Participant"}
+                        {addParticipant.isPending
+                          ? "Adding..."
+                          : "Add Participant"}
                       </Button>
                       <Button
                         variant="outline"
@@ -435,7 +477,6 @@ export function ThreadPage() {
           <Send className="h-4 w-4" />
         </Button>
       </form>
-
     </div>
   );
 }

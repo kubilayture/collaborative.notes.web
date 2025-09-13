@@ -1,12 +1,12 @@
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Collaboration from '@tiptap/extension-collaboration';
-import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
-import { HocuspocusProvider } from '@hocuspocus/provider';
-import * as Y from 'yjs';
-import { useEffect, useState, useCallback } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { useSession } from '../../lib/auth-client';
+import { useEditor, EditorContent } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
+import Collaboration from "@tiptap/extension-collaboration";
+import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import { HocuspocusProvider } from "@hocuspocus/provider";
+import * as Y from "yjs";
+import { useEffect, useState, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useSession } from "../../lib/auth-client";
 
 interface CollaborativeEditorProps {
   noteId: string;
@@ -15,17 +15,19 @@ interface CollaborativeEditorProps {
   onUpdate?: (content: string) => void;
 }
 
-export function CollaborativeEditor({ 
-  noteId, 
-  initialContent = '', 
+export function CollaborativeEditor({
+  noteId,
+  initialContent = "",
   editable = true,
-  onUpdate 
+  onUpdate,
 }: CollaborativeEditorProps) {
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc] = useState(() => new Y.Doc());
   const [isProviderReady, setIsProviderReady] = useState(false);
+  const [isSynced, setIsSynced] = useState(false);
+  const [hasSeeded, setHasSeeded] = useState(false);
 
   // Initialize provider
   useEffect(() => {
@@ -33,7 +35,7 @@ export function CollaborativeEditor({
 
     // Create HocusPocus provider
     const hocuspocusProvider = new HocuspocusProvider({
-      url: import.meta.env.VITE_COLLABORATION_URL || 'ws://localhost:8080',
+      url: import.meta.env.VITE_COLLABORATION_URL || "ws://localhost:8080",
       name: noteId,
       document: doc,
       token: session.user.id, // Use user ID as token for authentication
@@ -43,67 +45,88 @@ export function CollaborativeEditor({
     setProvider(hocuspocusProvider);
     setIsProviderReady(true);
 
-    hocuspocusProvider.on('status', ({ status }) => {
+    hocuspocusProvider.on("status", ({ status }) => {
       // Connection status tracking for potential UI indicators
     });
 
-    hocuspocusProvider.on('sync', (synced) => {
+    hocuspocusProvider.on("sync", (synced) => {
+      setIsSynced(synced);
       if (synced) {
-        queryClient.invalidateQueries({ queryKey: ['notes'] });
-        queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+        queryClient.invalidateQueries({ queryKey: ["notes"] });
+        queryClient.invalidateQueries({ queryKey: ["note", noteId] });
       }
     });
 
-    doc.on('update', (update) => {
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
+    doc.on("update", (update) => {
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
+      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
     });
 
     return () => {
       hocuspocusProvider.destroy();
       setProvider(null);
       setIsProviderReady(false);
+      setHasSeeded(false);
+      setIsSynced(false);
     };
   }, [session, noteId, doc, queryClient]);
 
   // Initialize editor with collaboration
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Collaboration.configure({
-        document: doc,
-      }),
-      // Only include CollaborationCursor if provider exists
-      ...(provider ? [CollaborationCursor.configure({
-        provider,
-        user: session?.user ? {
-          name: session.user.name,
-          color: '#' + Math.floor(Math.random()*16777215).toString(16),
-        } : undefined,
-      })] : []),
-    ],
-    editable,
-    onCreate: ({ editor }) => {
-      const ytext = doc.getText('content');
-      const yjsContent = ytext.toString();
-      
-      if (!yjsContent && initialContent) {
-        editor.commands.setContent(initialContent);
-      }
+  const editor = useEditor(
+    {
+      extensions: [
+        // Disable history when using Collaboration to avoid conflicts and duplication
+        StarterKit.configure({
+          history: false,
+        }),
+        Collaboration.configure({
+          document: doc,
+        }),
+        // Only include CollaborationCursor if provider exists
+        ...(provider
+          ? [
+              CollaborationCursor.configure({
+                provider,
+                user: session?.user
+                  ? {
+                      name: session.user.name,
+                      color:
+                        "#" + Math.floor(Math.random() * 16777215).toString(16),
+                    }
+                  : undefined,
+              }),
+            ]
+          : []),
+      ],
+      editable,
+      // Avoid setting initial content directly when using Collaboration, as
+      // the provider will sync content. Setting content here can cause duplicates.
+      onUpdate: ({ editor }) => {
+        if (onUpdate) {
+          onUpdate(editor.getHTML());
+        }
+      },
     },
-    onUpdate: ({ editor }) => {
-      if (onUpdate) {
-        onUpdate(editor.getHTML());
-      }
-    },
-  }, [isProviderReady, session, provider, initialContent, noteId]);
+    [isProviderReady, session, provider, initialContent, noteId]
+  );
+
+  // After provider sync and editor ready: seed initial content only if doc is empty
+  useEffect(() => {
+    if (!editor || !isProviderReady || !isSynced || hasSeeded) return;
+    if (editor.isEmpty && initialContent) {
+      editor.commands.setContent(initialContent);
+      setHasSeeded(true);
+    }
+  }, [editor, isProviderReady, isSynced, initialContent, hasSeeded]);
 
   // Show loading state until provider is ready and editor is initialized
   if (!isProviderReady || !editor) {
     return (
       <div className="min-h-[500px] w-full rounded-md border border-input bg-background px-3 py-2 flex items-center justify-center">
         <div className="text-muted-foreground">
-          {!session?.user ? 'Please sign in to use collaborative editing...' : 'Loading collaborative editor...'}
+          {!session?.user
+            ? "Please sign in to use collaborative editing..."
+            : "Loading collaborative editor..."}
         </div>
       </div>
     );
@@ -111,7 +134,7 @@ export function CollaborativeEditor({
 
   return (
     <div className="relative">
-      <EditorContent 
+      <EditorContent
         editor={editor}
         className="min-h-[500px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2 prose prose-sm max-w-none"
       />

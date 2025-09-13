@@ -1,67 +1,100 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSession } from "../../lib/auth-client";
 import { toast } from "sonner";
-import { 
-  useFriends, 
-  usePendingRequests, 
-  useSentRequests, 
+import {
+  useFriends,
+  usePendingRequests,
+  useSentRequests,
   useSendFriendRequest,
   useAcceptFriendRequest,
   useDeclineFriendRequest,
-  useRemoveFriend
+  useRemoveFriend,
 } from "../../hooks/friends.hook";
+import { useMarkAllRead } from "../../hooks/notifications.hook";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../../components/ui/tabs";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuTrigger 
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "../../components/ui/tabs";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
-import { 
-  Users, 
-  UserPlus, 
-  Mail, 
-  Check, 
-  X, 
-  MoreVertical, 
+import {
+  Users,
+  UserPlus,
+  Mail,
+  Check,
+  X,
+  MoreVertical,
   UserMinus,
   Clock,
-  Send
+  Send,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export function FriendsPage() {
   const [email, setEmail] = useState("");
   const { data: session } = useSession();
-  
-  const { data: friends, isLoading: friendsLoading, error: friendsError, refetch: refetchFriends } = useFriends();
-  const { data: pendingRequests, isLoading: pendingLoading, error: pendingError, refetch: refetchPending } = usePendingRequests();
-  const { data: sentRequests, isLoading: sentLoading, error: sentError, refetch: refetchSent } = useSentRequests();
-  
+
+  const {
+    data: friends,
+    isLoading: friendsLoading,
+    error: friendsError,
+    refetch: refetchFriends,
+  } = useFriends();
+  const {
+    data: pendingRequests,
+    isLoading: pendingLoading,
+    error: pendingError,
+    refetch: refetchPending,
+  } = usePendingRequests();
+  const {
+    data: sentRequests,
+    isLoading: sentLoading,
+    error: sentError,
+    refetch: refetchSent,
+  } = useSentRequests();
+
   const sendFriendRequest = useSendFriendRequest();
   const acceptFriendRequest = useAcceptFriendRequest();
   const declineFriendRequest = useDeclineFriendRequest();
   const removeFriend = useRemoveFriend();
+  const markAllRead = useMarkAllRead();
 
   const handleSendRequest = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
-    
+
     // Prevent sending friend request to yourself
-    if (session?.user?.email && email.trim().toLowerCase() === session.user.email.toLowerCase()) {
+    if (
+      session?.user?.email &&
+      email.trim().toLowerCase() === session.user.email.toLowerCase()
+    ) {
       toast.error("You cannot send a friend request to yourself");
       return;
     }
-    
-    sendFriendRequest.mutate({ email: email.trim() }, {
-      onSuccess: () => setEmail("")
-    });
+
+    sendFriendRequest.mutate(
+      { email: email.trim() },
+      {
+        onSuccess: () => setEmail(""),
+      }
+    );
   };
 
   const handleAcceptRequest = (requestId: string) => {
@@ -81,17 +114,23 @@ export function FriendsPage() {
   const isLoading = friendsLoading || pendingLoading || sentLoading;
   const hasError = friendsError || pendingError || sentError;
 
+  // Reset friend-related notifications when viewing this page
+  useEffect(() => {
+    markAllRead.mutate("friend_request");
+    markAllRead.mutate("friend_accepted");
+  }, []);
+
   if (isLoading) return <Loading />;
-  
+
   if (hasError) {
     return (
-      <Error 
-        message="Failed to load friends data" 
+      <Error
+        message="Failed to load friends data"
         onRetry={() => {
           refetchFriends();
           refetchPending();
           refetchSent();
-        }} 
+        }}
       />
     );
   }
@@ -128,8 +167,8 @@ export function FriendsPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="flex-1"
               />
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={!email.trim() || sendFriendRequest.isPending}
               >
                 <Send className="h-4 w-4 mr-2" />
@@ -163,7 +202,8 @@ export function FriendsPage() {
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold mb-2">No friends yet</h3>
                 <p className="text-muted-foreground text-center mb-4">
-                  Start building your collaboration network by sending friend requests
+                  Start building your collaboration network by sending friend
+                  requests
                 </p>
               </CardContent>
             </Card>
@@ -175,10 +215,19 @@ export function FriendsPage() {
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
-                          <CardTitle className="text-lg">{friendItem.friend.name}</CardTitle>
-                          <p className="text-sm text-muted-foreground">{friendItem.friend.email}</p>
+                          <CardTitle className="text-lg">
+                            {friendItem.friend.name}
+                          </CardTitle>
+                          <p className="text-sm text-muted-foreground">
+                            {friendItem.friend.email}
+                          </p>
                           <div className="flex items-center gap-2 mt-1">
-                            <Badge variant={friendItem.isOnline ? "default" : "secondary"} className="text-xs">
+                            <Badge
+                              variant={
+                                friendItem.isOnline ? "default" : "secondary"
+                              }
+                              className="text-xs"
+                            >
                               {friendItem.isOnline ? "Online" : "Offline"}
                             </Badge>
                           </div>
@@ -191,7 +240,9 @@ export function FriendsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
-                              onClick={() => handleRemoveFriend(friendItem.friend.id)}
+                              onClick={() =>
+                                handleRemoveFriend(friendItem.friend.id)
+                              }
                               className="text-destructive focus:text-destructive"
                               disabled={removeFriend.isPending}
                             >
@@ -205,11 +256,19 @@ export function FriendsPage() {
                     <CardContent>
                       <div className="flex flex-col gap-2">
                         <Badge variant="outline" className="text-xs">
-                          Friends since {formatDistanceToNow(new Date(friendItem.friendsSince), { addSuffix: true })}
+                          Friends since{" "}
+                          {formatDistanceToNow(
+                            new Date(friendItem.friendsSince),
+                            { addSuffix: true }
+                          )}
                         </Badge>
                         {!friendItem.isOnline && friendItem.lastSeenAt && (
                           <p className="text-xs text-muted-foreground">
-                            Last seen {formatDistanceToNow(new Date(friendItem.lastSeenAt), { addSuffix: true })}
+                            Last seen{" "}
+                            {formatDistanceToNow(
+                              new Date(friendItem.lastSeenAt),
+                              { addSuffix: true }
+                            )}
                           </p>
                         )}
                       </div>
@@ -226,9 +285,12 @@ export function FriendsPage() {
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Mail className="h-12 w-12 text-muted-foreground mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No pending requests</h3>
+                <h3 className="text-lg font-semibold mb-2">
+                  No pending requests
+                </h3>
                 <p className="text-muted-foreground text-center">
-                  Friend requests will appear here when others want to connect with you
+                  Friend requests will appear here when others want to connect
+                  with you
                 </p>
               </CardContent>
             </Card>
@@ -239,10 +301,17 @@ export function FriendsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold">{request.requester.name}</h4>
-                        <p className="text-sm text-muted-foreground">{request.requester.email}</p>
+                        <h4 className="font-semibold">
+                          {request.requester.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {request.requester.email}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Sent {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                          Sent{" "}
+                          {formatDistanceToNow(new Date(request.createdAt), {
+                            addSuffix: true,
+                          })}
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
@@ -290,10 +359,17 @@ export function FriendsPage() {
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h4 className="font-semibold">{request.addressee.name}</h4>
-                        <p className="text-sm text-muted-foreground">{request.addressee.email}</p>
+                        <h4 className="font-semibold">
+                          {request.addressee.name}
+                        </h4>
+                        <p className="text-sm text-muted-foreground">
+                          {request.addressee.email}
+                        </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Sent {formatDistanceToNow(new Date(request.createdAt), { addSuffix: true })}
+                          Sent{" "}
+                          {formatDistanceToNow(new Date(request.createdAt), {
+                            addSuffix: true,
+                          })}
                         </p>
                       </div>
                       <Badge variant="outline">Pending</Badge>
