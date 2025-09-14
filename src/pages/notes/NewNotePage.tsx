@@ -4,12 +4,14 @@ import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
+import { FolderSelect } from "../../components/folders/FolderSelect";
 import { useNavigate } from "react-router";
 import { ArrowLeft, Save } from "lucide-react";
 
 export function NewNotePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [folderId, setFolderId] = useState<string | null>(null);
   const createNote = useCreateNote();
   const navigate = useNavigate();
 
@@ -20,6 +22,7 @@ export function NewNotePage() {
     createNote.mutate({
       title: title.trim(),
       content: content.trim(),
+      folderId: folderId || undefined,
     });
   };
 
@@ -67,6 +70,19 @@ export function NewNotePage() {
                 className="text-lg font-semibold"
                 required
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="folder">Folder</Label>
+              <FolderSelect
+                value={folderId}
+                onValueChange={setFolderId}
+                placeholder="Select a folder (optional)"
+                allowRoot={true}
+              />
+              <p className="text-xs text-muted-foreground">
+                Choose a folder to organize your note, or leave empty for the root level.
+              </p>
             </div>
 
             <div className="space-y-2">

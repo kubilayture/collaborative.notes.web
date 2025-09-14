@@ -71,6 +71,7 @@ export interface Note {
   title: string;
   content: NoteContent;
   ownerId: string;
+  folderId?: string | null;
   createdAt: string;
   updatedAt: string;
   isPublic?: boolean;
@@ -97,6 +98,7 @@ export interface Note {
 export interface CreateNoteRequest {
   title: string;
   content: string; // This will be converted to NoteContent structure
+  folderId?: string;
 }
 
 export interface UpdateNoteRequest {

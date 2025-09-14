@@ -23,6 +23,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
+import { MoveNoteDialog } from "../../components/folders/MoveNoteDialog";
+import { CreateFolderDialog } from "../../components/folders/CreateFolderDialog";
 import { useNavigate } from "react-router";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
@@ -34,6 +36,8 @@ import {
   Users,
   Calendar,
   Share2,
+  FolderOpen,
+  FolderPlus,
 } from "lucide-react";
 import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
 import { formatDistanceToNow } from "date-fns";
@@ -42,6 +46,9 @@ export function NotesListPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [shareOpen, setShareOpen] = useState(false);
   const [shareNote, setShareNote] = useState<Note | null>(null);
+  const [moveOpen, setMoveOpen] = useState(false);
+  const [moveNote, setMoveNote] = useState<Note | null>(null);
+  const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { data: notes, isLoading, error, refetch } = useNotes();
@@ -104,10 +111,19 @@ export function NotesListPage() {
               Manage your collaborative notes and shared documents
             </p>
           </div>
-          <Button onClick={() => navigate("/notes/new")} title="New Note">
-            <Plus className="h-4 w-4" />
-            <span className="hidden sm:inline sm:ml-2">New Note</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => setCreateFolderOpen(true)}
+              title="New Folder"
+            >
+              <FolderPlus className="h-4 w-4" />
+              <span className="hidden sm:inline sm:ml-2">New Folder</span>
+            </Button>
+            <Button onClick={() => navigate("/notes/new")} title="New Note">
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline sm:ml-2">New Note</span>
+            </Button>
+          </div>
         </div>
 
         <div className="relative mb-6">
@@ -190,6 +206,18 @@ export function NotesListPage() {
                           <Share2 className="h-4 w-4 mr-2" />
                           Share & Permissions
                         </DropdownMenuItem>
+                        {canEditNote(note) && (
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setMoveNote(note);
+                              setMoveOpen(true);
+                            }}
+                          >
+                            <FolderOpen className="h-4 w-4 mr-2" />
+                            Move to Folder
+                          </DropdownMenuItem>
+                        )}
                         {canDeleteNote(note) && (
                           <>
                             <DropdownMenuSeparator />
@@ -251,6 +279,22 @@ export function NotesListPage() {
           }}
         />
       )}
+      {moveNote && (
+        <MoveNoteDialog
+          noteId={moveNote.id}
+          noteTitle={moveNote.title}
+          currentFolderId={moveNote.folderId}
+          open={moveOpen}
+          onOpenChange={(o) => {
+            setMoveOpen(o);
+            if (!o) setMoveNote(null);
+          }}
+        />
+      )}
+      <CreateFolderDialog
+        open={createFolderOpen}
+        onOpenChange={setCreateFolderOpen}
+      />
     </div>
   );
 }
