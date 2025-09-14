@@ -197,4 +197,79 @@
   .ProseMirror p:last-child {
     margin-bottom: 0;
   }
+
+  /* Collaborative cursor styles */
+  .collaboration-cursor__caret {
+    position: relative;
+    margin-left: -1px;
+    margin-right: -1px;
+    border-left: 1px solid #0d0d0d;
+    border-right: 1px solid #0d0d0d;
+    word-break: normal;
+    pointer-events: none;
+  }
+
+  .collaboration-cursor__label {
+    position: absolute;
+    top: -1.4em;
+    left: -1px;
+    font-size: 12px;
+    font-style: normal;
+    font-weight: 600;
+    line-height: normal;
+    user-select: none;
+    color: inherit;
+    padding: 0.1rem 0.3rem;
+    border-radius: 3px 3px 3px 0;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  /* Custom circular user indicator */
+  .collaboration-cursor__user-indicator {
+    position: absolute;
+    top: -2.8em;
+    left: -12px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    font-weight: 600;
+    color: white;
+    user-select: none;
+    pointer-events: none;
+    z-index: 15;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    border: 2px solid white;
+  }
+
+  .dark .collaboration-cursor__user-indicator {
+    border-color: rgba(0, 0, 0, 0.1);
+  }
+
+  /* Hover effects for better interactivity */
+  .collaboration-cursor__caret:hover .collaboration-cursor__user-indicator {
+    transform: scale(1.1);
+    transition: transform 0.15s ease;
+  }
+
+  /* Animation for user indicators */
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(4px) scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .collaboration-cursor__user-indicator {
+    animation: fadeInUp 0.2s ease-out;
+    cursor: help; /* Show that hovering will reveal info */
+  }
 }

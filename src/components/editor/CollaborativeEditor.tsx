@@ -16,6 +16,45 @@ interface CollaborativeEditorProps {
   onUpdate?: (content: string) => void;
 }
 
+// Helper function to generate consistent colors based on user ID
+function generateUserColor(userId: string): string {
+  const colors = [
+    "#FF6B6B", // Red
+    "#4ECDC4", // Teal
+    "#45B7D1", // Blue
+    "#96CEB4", // Green
+    "#FFEAA7", // Yellow
+    "#DDA0DD", // Plum
+    "#98D8C8", // Mint
+    "#F7DC6F", // Light Yellow
+    "#BB8FCE", // Light Purple
+    "#85C1E9", // Light Blue
+    "#F8C471", // Orange
+    "#82E0AA", // Light Green
+  ];
+
+  // Generate a hash from user ID for consistent color assignment
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    hash = ((hash << 5) - hash + userId.charCodeAt(i)) & 0xffffffff;
+  }
+
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// Helper function to get initials from name
+function getInitials(name: string): string {
+  if (!name) return "?";
+
+  const words = name.trim().split(/\s+/);
+  if (words.length === 1) {
+    return words[0].charAt(0).toUpperCase();
+  }
+
+  // Get first letter of first name and first letter of last name
+  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+}
+
 export function CollaborativeEditor({
   noteId,
   initialContent = "",
@@ -122,14 +161,34 @@ export function CollaborativeEditor({
     ];
 
     if (provider && session?.user) {
+      // Generate a consistent color based on user ID
+      const userColor = generateUserColor(session.user.id);
+
       baseExtensions.push(
         CollaborationCursor.configure({
           provider,
           user: {
             name: session.user.name,
-            color: `#${Math.floor(Math.random() * 16777215)
-              .toString(16)
-              .padStart(6, "0")}`,
+            color: userColor,
+          },
+          render: (user: any) => {
+            const cursor = document.createElement("span");
+            cursor.classList.add("collaboration-cursor__caret");
+            cursor.setAttribute("style", `border-color: ${user.color}`);
+
+            // Create circular user indicator with initials
+            const userIndicator = document.createElement("div");
+            userIndicator.classList.add("collaboration-cursor__user-indicator");
+            userIndicator.setAttribute("style", `background-color: ${user.color}`);
+            userIndicator.setAttribute("title", user.name); // Show name on hover
+
+            // Get initials from user name
+            const initials = getInitials(user.name);
+            userIndicator.textContent = initials;
+
+            cursor.appendChild(userIndicator);
+
+            return cursor;
           },
         })
       );
