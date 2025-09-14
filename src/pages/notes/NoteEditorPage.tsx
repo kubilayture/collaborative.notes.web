@@ -108,42 +108,70 @@ export function NoteEditorPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={handleBack}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Notes
+        <div className="flex items-center justify-between mb-4 gap-2">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {/* Back Button - Icon only on mobile */}
+            <Button
+              variant="ghost"
+              onClick={handleBack}
+              className="h-input px-2 sm:px-3"
+              title="Back to Notes"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline ml-2">Back to Notes</span>
             </Button>
-            
-            <div className="flex items-center gap-2">
-              <Badge variant={isOwner ? "default" : "secondary"}>
+
+            {/* Permission Badges - Responsive sizing */}
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Badge
+                variant={isOwner ? "default" : "secondary"}
+                className="text-xs px-1.5 py-0.5 sm:px-2 sm:py-1"
+              >
                 {getPermissionLevel()}
               </Badge>
-              
+
               {!canEdit && (
-                <Badge variant="outline" className="text-amber-600">
+                <Badge
+                  variant="outline"
+                  className="text-amber-600 text-xs px-1.5 py-0.5 sm:px-2 sm:py-1"
+                >
                   <Lock className="h-3 w-3 mr-1" />
-                  Read Only
+                  <span className="hidden sm:inline">Read Only</span>
+                  <span className="sm:hidden">RO</span>
                 </Badge>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          {/* Action Buttons - Responsive layout */}
+          <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
             {canEdit && (
-              <Button 
+              <Button
                 onClick={handleSave}
                 disabled={!hasChanges || updateNote.isPending}
                 variant={hasChanges ? "default" : "outline"}
+                className="h-input px-2 sm:px-4"
+                title={updateNote.isPending ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
               >
-                <Save className="h-4 w-4 mr-2" />
-                {updateNote.isPending ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+                <Save className="h-4 w-4" />
+                {/* Show text on larger screens */}
+                <span className="hidden md:inline ml-2">
+                  {updateNote.isPending ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+                </span>
+                {/* Show shorter text on medium screens */}
+                <span className="hidden sm:inline md:hidden ml-2">
+                  {updateNote.isPending ? "Saving..." : hasChanges ? "Save" : "Saved"}
+                </span>
               </Button>
             )}
-            
+
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="sm">
+                <Button
+                  variant="ghost"
+                  className="h-input w-input p-0"
+                  title="More options"
+                >
                   <MoreVertical className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
@@ -228,14 +256,6 @@ export function NoteEditorPage() {
         </div>
       </div>
 
-      {hasChanges && canEdit && (
-        <div className="fixed bottom-6 right-6">
-          <Button onClick={handleSave} disabled={updateNote.isPending}>
-            <Save className="h-4 w-4 mr-2" />
-            {updateNote.isPending ? "Saving..." : "Save Changes"}
-          </Button>
-        </div>
-      )}
 
       {/* Share & Permissions Dialog */}
       <SharePermissionsDialog

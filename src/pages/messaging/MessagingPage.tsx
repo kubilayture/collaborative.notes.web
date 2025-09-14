@@ -82,26 +82,24 @@ export function MessagingPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-3xl font-bold">Messages</h1>
-            <p className="text-muted-foreground">
-              Chat with your friends and collaborate in real-time
-            </p>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MessageSquare className="h-4 w-4" />
-              {threads?.length || 0} conversations
+        <div className="mb-6">
+          <div className="flex items-start justify-between mb-3 sm:mb-2 gap-4">
+            <div className="min-w-0 flex-1">
+              <h1 className="text-3xl font-bold">Messages</h1>
+              <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+                Chat with your friends and collaborate in real-time
+              </p>
             </div>
             <Dialog
               open={isCreateDialogOpen}
               onOpenChange={setIsCreateDialogOpen}
             >
               <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  New Conversation
+                <Button title="New Conversation" className="ml-4">
+                  <Plus className="h-4 w-4" />
+                  <span className="hidden sm:inline sm:ml-2">
+                    New Conversation
+                  </span>
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -205,6 +203,13 @@ export function MessagingPage() {
               </DialogContent>
             </Dialog>
           </div>
+
+          {/* Conversation Counter - Better positioned for mobile */}
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <MessageSquare className="h-4 w-4" />
+            <span>{threads?.length || 0}</span>
+            <span className="hidden sm:inline">conversations</span>
+          </div>
         </div>
       </div>
 
@@ -256,10 +261,9 @@ export function MessagingPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-1 text-xs text-muted-foreground">
                         <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(
-                          new Date(thread.lastMessageAt),
-                          { addSuffix: true }
-                        )}
+                        {formatDistanceToNow(new Date(thread.lastMessageAt), {
+                          addSuffix: true,
+                        })}
                       </div>
                     </div>
                     <p className="text-sm text-muted-foreground line-clamp-2">

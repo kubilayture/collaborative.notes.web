@@ -45,8 +45,8 @@ export function NewNotePage() {
           </Button>
         </div>
         
-        <h1 className="text-3xl font-bold">Create New Note</h1>
-        <p className="text-muted-foreground">
+        <h1 className="text-lg sm:text-3xl font-bold">Create New Note</h1>
+        <p className="hidden sm:block text-muted-foreground">
           Create a new collaborative note that you can share with others
         </p>
       </div>

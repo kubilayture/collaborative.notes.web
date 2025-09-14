@@ -123,6 +123,18 @@
 }
 
 @layer utilities {
+  /* Consistent height utility for inputs and buttons */
+  .h-input {
+    height: 40px;
+    min-height: 40px;
+  }
+
+  /* Width utility to match height for square buttons */
+  .w-input {
+    width: 40px;
+    min-width: 40px;
+  }
+
   .line-clamp-3 {
     overflow: hidden;
     display: -webkit-box;

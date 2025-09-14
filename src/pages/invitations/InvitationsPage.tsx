@@ -132,7 +132,7 @@ export function InvitationsPage() {
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto p-6">
         <div className="flex items-center justify-center">
           <div className="text-muted-foreground">Loading invitations...</div>
         </div>
@@ -142,7 +142,7 @@ export function InvitationsPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container mx-auto p-6">
         <div className="flex items-center justify-center">
           <div className="text-destructive">Failed to load invitations</div>
         </div>
@@ -151,10 +151,10 @@ export function InvitationsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">My Invitations</h1>
-        <p className="text-muted-foreground mt-2">
+        <h1 className="text-3xl font-bold">My Invitations</h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
           Manage your note collaboration invitations
         </p>
       </div>
@@ -220,9 +220,12 @@ export function InvitationsPage() {
                             declineInvitation.mutate(invitation.token)
                           }
                           disabled={declineInvitation.isPending}
+                          title="Decline"
                         >
-                          <X className="h-4 w-4 mr-1" />
-                          Decline
+                          <X className="h-4 w-4" />
+                          <span className="hidden sm:inline sm:ml-1">
+                            Decline
+                          </span>
                         </Button>
                         <Button
                           size="sm"
@@ -230,9 +233,12 @@ export function InvitationsPage() {
                             acceptInvitation.mutate(invitation.token)
                           }
                           disabled={acceptInvitation.isPending}
+                          title="Accept"
                         >
-                          <Check className="h-4 w-4 mr-1" />
-                          Accept
+                          <Check className="h-4 w-4" />
+                          <span className="hidden sm:inline sm:ml-1">
+                            Accept
+                          </span>
                         </Button>
                       </div>
                     ) : (

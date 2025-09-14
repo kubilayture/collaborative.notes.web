@@ -97,16 +97,16 @@ export function NotesListPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold">My Notes</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               Manage your collaborative notes and shared documents
             </p>
           </div>
-          <Button onClick={() => navigate("/notes/new")}>
-            <Plus className="h-4 w-4 mr-2" />
-            New Note
+          <Button onClick={() => navigate("/notes/new")} title="New Note">
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline sm:ml-2">New Note</span>
           </Button>
         </div>
 
@@ -143,7 +143,7 @@ export function NotesListPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
           {filteredNotes.map((note) => {
             const permissionLevel = getNotePermissionLevel(note);
             const isOwner = note.ownerId === session?.user?.id;

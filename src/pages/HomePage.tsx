@@ -8,6 +8,7 @@ import {
 } from "../components/ui/card";
 import { useNavigate } from "react-router";
 import { useLogout } from "../hooks/auth.hook";
+import { LogOut } from "lucide-react";
 
 export function HomePage() {
   const { data: session } = useSession();
@@ -52,18 +53,24 @@ export function HomePage() {
   }
 
   return (
-    <div className="container mx-auto p-4">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
+    <div className="container mx-auto p-6">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
           <h1 className="text-3xl font-bold">
             Welcome back, {session.user.name}!
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
             Ready to collaborate on your notes?
           </p>
         </div>
-        <Button onClick={handleLogout} variant="outline">
-          Log Out
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          title="Log Out"
+          className="flex-shrink-0"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline sm:ml-2">Log Out</span>
         </Button>
       </div>
 

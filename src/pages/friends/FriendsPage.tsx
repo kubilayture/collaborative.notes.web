@@ -138,16 +138,17 @@ export function FriendsPage() {
   return (
     <div className="container mx-auto p-6">
       <div className="mb-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-6 gap-4">
           <div>
             <h1 className="text-3xl font-bold">Friends</h1>
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground mt-2 text-sm sm:text-base">
               Manage your friend connections and collaboration network
             </p>
           </div>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Users className="h-4 w-4" />
-            {friends?.length || 0} friends
+            {friends?.length || 0}{" "}
+            <span className="hidden sm:inline">friends</span>
           </div>
         </div>
 
@@ -170,9 +171,14 @@ export function FriendsPage() {
               <Button
                 type="submit"
                 disabled={!email.trim() || sendFriendRequest.isPending}
+                title={
+                  sendFriendRequest.isPending ? "Sending..." : "Send Request"
+                }
               >
-                <Send className="h-4 w-4 mr-2" />
-                {sendFriendRequest.isPending ? "Sending..." : "Send Request"}
+                <Send className="h-4 w-4" />
+                <span className="hidden sm:inline sm:ml-2">
+                  {sendFriendRequest.isPending ? "Sending..." : "Send Request"}
+                </span>
               </Button>
             </form>
           </CardContent>
@@ -319,18 +325,24 @@ export function FriendsPage() {
                           size="sm"
                           onClick={() => handleAcceptRequest(request.id)}
                           disabled={acceptFriendRequest.isPending}
+                          title="Accept"
                         >
-                          <Check className="h-4 w-4 mr-2" />
-                          Accept
+                          <Check className="h-4 w-4" />
+                          <span className="hidden sm:inline sm:ml-2">
+                            Accept
+                          </span>
                         </Button>
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleDeclineRequest(request.id)}
                           disabled={declineFriendRequest.isPending}
+                          title="Decline"
                         >
-                          <X className="h-4 w-4 mr-2" />
-                          Decline
+                          <X className="h-4 w-4" />
+                          <span className="hidden sm:inline sm:ml-2">
+                            Decline
+                          </span>
                         </Button>
                       </div>
                     </div>
