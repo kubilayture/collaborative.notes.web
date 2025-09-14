@@ -129,4 +129,72 @@
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 3;
   }
+
+  /* Hide scrollbar but keep functionality */
+  .scrollbar-hide {
+    /* For Webkit browsers */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none; /* Safari and Chrome */
+  }
+
+  /* Fix TipTap editor issues */
+  .ProseMirror {
+    outline: none;
+  }
+
+  /* Fix list styling issues */
+  .ProseMirror ul,
+  .ProseMirror ol {
+    padding-left: 1rem;
+    list-style-position: outside;
+  }
+
+  .ProseMirror ul {
+    list-style-type: disc;
+  }
+
+  .ProseMirror ol {
+    list-style-type: decimal;
+  }
+
+  .ProseMirror li {
+    margin: 0.25rem 0;
+  }
+
+  /* Fix empty document issues */
+  .ProseMirror p.is-editor-empty:first-child::before {
+    color: #adb5bd;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  /* Ensure single line height for empty paragraphs */
+  .ProseMirror p:empty {
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  /* Fix minimum height issues */
+  .ProseMirror {
+    min-height: 1.5em;
+  }
+
+  /* Better paragraph spacing */
+  .ProseMirror p {
+    margin: 0.5em 0;
+  }
+
+  .ProseMirror p:first-child {
+    margin-top: 0;
+  }
+
+  .ProseMirror p:last-child {
+    margin-bottom: 0;
+  }
 }

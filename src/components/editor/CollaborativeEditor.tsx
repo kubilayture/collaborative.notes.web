@@ -73,7 +73,10 @@ export function CollaborativeEditor({
   const extensions = useMemo(() => {
     const baseExtensions: any[] = [
       StarterKit.configure({
-        history: false,
+        history: {
+          depth: 10,
+          newGroupDelay: 500,
+        },
         heading: {
           levels: [1, 2, 3, 4, 5, 6],
         },
@@ -93,14 +96,23 @@ export function CollaborativeEditor({
           },
         },
         bulletList: {
-          HTMLAttributes: {
-            class: "list-disc list-inside",
-          },
+          keepMarks: true,
+          keepAttributes: false,
         },
         orderedList: {
-          HTMLAttributes: {
-            class: "list-decimal list-inside",
-          },
+          keepMarks: true,
+          keepAttributes: false,
+        },
+        listItem: {
+          HTMLAttributes: {},
+        },
+        paragraph: {
+          HTMLAttributes: {},
+        },
+        // Enable proper text deletion
+        dropcursor: {
+          color: "var(--color-primary)",
+          width: 2,
         },
       }),
 
@@ -130,6 +142,14 @@ export function CollaborativeEditor({
     {
       extensions,
       editable,
+      // Let TipTap handle empty content naturally
+      // editorProps: {
+      //   attributes: {
+      //     class:
+      //       "prose prose-sm sm:prose-base lg:prose-lg xl:prose-2xl mx-auto focus:outline-none",
+      //     "data-placeholder": "Start writing...",
+      //   },
+      // },
       onUpdate: useCallback(
         ({ editor }: { editor: any }) => {
           if (onUpdate) {
@@ -176,38 +196,23 @@ export function CollaborativeEditor({
   return (
     <div className="relative">
       <div className="w-full rounded-md border border-input bg-background focus-within:outline-none focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
-        <EditorToolbar editor={editor} />
-        <EditorContent editor={editor} />
+        <EditorToolbar
+          editor={editor}
+          isConnected={isConnected}
+          editable={editable}
+        />
         <EditorContent
           editor={editor}
           className="min-h-[500px] px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground prose prose-sm max-w-none dark:prose-invert [&_.ProseMirror]:outline-none [&_.ProseMirror]:min-h-[450px] [&_.ProseMirror_h1]:text-2xl [&_.ProseMirror_h2]:text-xl [&_.ProseMirror_h3]:text-lg [&_.ProseMirror_h4]:text-base [&_.ProseMirror_h5]:text-sm [&_.ProseMirror_h6]:text-sm [&_.ProseMirror_blockquote]:border-l-4 [&_.ProseMirror_blockquote]:border-muted-foreground/20 [&_.ProseMirror_blockquote]:pl-4 [&_.ProseMirror_blockquote]:italic [&_.ProseMirror_pre]:bg-muted [&_.ProseMirror_pre]:rounded-md [&_.ProseMirror_pre]:p-4 [&_.ProseMirror_code]:bg-muted [&_.ProseMirror_code]:rounded [&_.ProseMirror_code]:px-1.5 [&_.ProseMirror_code]:py-0.5 [&_.ProseMirror_code]:text-sm"
         />
       </div>
 
-      {/* Status indicators */}
-      <div className="absolute top-2 right-2 flex items-center gap-2">
-        {!editable && (
-          <div className="text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded border">
-            Read-only
-          </div>
-        )}
-
-        {/* Connection status */}
-        <div className="flex items-center gap-1 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded border">
-          <div
-            className={`w-2 h-2 rounded-full ${
-              isConnected ? "bg-green-500" : "bg-red-500"
-            }`}
-          ></div>
-          {isConnected ? "Connected" : "Disconnected"}
+      {/* Read-only indicator */}
+      {!editable && (
+        <div className="absolute top-2 right-2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded border">
+          Read-only
         </div>
-      </div>
-
-      {/* Rich Text Editor indicator */}
-      <div className="absolute bottom-2 right-2 text-xs text-muted-foreground bg-background/80 backdrop-blur-sm px-2 py-1 rounded border flex items-center gap-1">
-        <div className="w-2 h-2 rounded-full bg-orange-500"></div>
-        Collaborative Editor
-      </div>
+      )}
     </div>
   );
 }

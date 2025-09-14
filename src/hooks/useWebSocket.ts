@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from 'react';
-import { io, Socket } from 'socket.io-client';
-import { useSession } from '../lib/auth-client';
+import { useEffect, useRef, useState } from "react";
+import { io, Socket } from "socket.io-client";
+import { useSession } from "../lib/auth-client";
 
 export const useWebSocket = () => {
   const { data: session } = useSession();
@@ -18,25 +18,25 @@ export const useWebSocket = () => {
     }
 
     // Create socket connection
-    const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:4000', {
+    const socket = io(import.meta.env.VITE_API_URL || "http://localhost:4000", {
       withCredentials: true,
-      transports: ['websocket', 'polling'],
+      transports: ["websocket", "polling"],
     });
 
     socketRef.current = socket;
 
-    socket.on('connect', () => {
-      console.log('WebSocket connected');
+    socket.on("connect", () => {
+      console.log("WebSocket connected");
       setIsConnected(true);
     });
 
-    socket.on('disconnect', () => {
-      console.log('WebSocket disconnected');
+    socket.on("disconnect", () => {
+      console.log("WebSocket disconnected");
       setIsConnected(false);
     });
 
-    socket.on('connect_error', (error) => {
-      console.error('WebSocket connection error:', error);
+    socket.on("connect_error", (error) => {
+      console.error("WebSocket connection error:", error);
       setIsConnected(false);
     });
 

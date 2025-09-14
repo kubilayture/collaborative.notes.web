@@ -4,38 +4,61 @@ import { toast } from "sonner";
 import { api } from "../lib/api";
 
 // Utility functions for content transformation
-const textToContent = (text: string): NoteContent => ({
-  type: "text",
-  data: text,
-});
+const textToContent = (text: string): NoteContent => {
+  // Check if the text contains HTML formatting
+  if (text.includes("<") && text.includes(">")) {
+    return {
+      type: "prosemirror",
+      data: text, // Store HTML directly for rich content
+    };
+  }
+  return {
+    type: "text",
+    data: text,
+  };
+};
 
 const stripHtmlTags = (html: string): string => {
-  if (typeof window !== 'undefined') {
-    const tempDiv = document.createElement('div');
+  if (typeof window !== "undefined") {
+    const tempDiv = document.createElement("div");
     tempDiv.innerHTML = html;
-    return tempDiv.textContent || tempDiv.innerText || '';
+    return tempDiv.textContent || tempDiv.innerText || "";
   }
-  return html.replace(/<[^>]*>/g, '').trim();
+  return html.replace(/<[^>]*>/g, "").trim();
 };
 
 export const contentToText = (content: NoteContent): string => {
   if (!content) return "";
-  
+
   let rawContent = "";
-  if (content.type === "text" && typeof content.data === "string") {
+  if (content.type === "prosemirror" && typeof content.data === "string") {
+    // For rich content (HTML), return it as-is for the editor
+    return content.data;
+  } else if (content.type === "text" && typeof content.data === "string") {
     rawContent = content.data;
   } else if (typeof content.data === "string") {
     rawContent = content.data;
   } else {
     rawContent = JSON.stringify(content.data); // Fallback for complex objects
   }
-  
-  // Strip HTML tags if the content contains HTML
-  if (rawContent.includes('<') && rawContent.includes('>')) {
-    return stripHtmlTags(rawContent);
-  }
-  
+
   return rawContent;
+};
+
+// Function to get plain text for display purposes (like in lists)
+export const contentToPlainText = (content: NoteContent): string => {
+  if (!content) return "";
+
+  if (content.type === "prosemirror" && typeof content.data === "string") {
+    // For rich content, strip HTML for plain text display
+    return stripHtmlTags(content.data);
+  } else if (content.type === "text" && typeof content.data === "string") {
+    return content.data;
+  } else if (typeof content.data === "string") {
+    return content.data;
+  } else {
+    return JSON.stringify(content.data);
+  }
 };
 
 export interface NoteContent {
@@ -132,7 +155,10 @@ export const useCreateNote = () => {
       navigate("/notes");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to create note";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to create note";
       toast.error(errorMessage);
     },
   });
@@ -142,10 +168,17 @@ export const useUpdateNote = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateNoteRequest }): Promise<Note> => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateNoteRequest;
+    }): Promise<Note> => {
       const payload: any = {};
       if (data.title !== undefined) payload.title = data.title;
-      if (data.content !== undefined) payload.content = textToContent(data.content);
+      if (data.content !== undefined)
+        payload.content = textToContent(data.content);
 
       const response = await api.patch<Note>(`/notes/${id}`, payload);
       return response.data;
@@ -156,7 +189,10 @@ export const useUpdateNote = () => {
       toast.success("Note updated successfully");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to update note";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update note";
       toast.error(errorMessage);
     },
   });
@@ -176,7 +212,10 @@ export const useDeleteNote = () => {
       navigate("/notes");
     },
     onError: (error: any) => {
-      const errorMessage = error.response?.data?.message || error.message || "Failed to delete note";
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to delete note";
       toast.error(errorMessage);
     },
   });
