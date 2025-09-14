@@ -18,6 +18,7 @@ import {
   Mail,
 } from "lucide-react";
 import { useNotificationCounts } from "../../hooks/notifications.hook";
+import { useNotificationToasts } from "../../hooks/useNotificationToasts";
 import { Badge } from "../ui/badge";
 
 const Layout = () => {
@@ -25,6 +26,9 @@ const Layout = () => {
   const location = useLocation();
   const { data: session } = useSession();
   const { data: counts } = useNotificationCounts();
+
+  // Enable notification toasts
+  useNotificationToasts();
 
   const handleSignOut = async () => {
     await signOut();

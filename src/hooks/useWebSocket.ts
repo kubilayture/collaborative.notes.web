@@ -26,7 +26,7 @@ export const useWebSocket = () => {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("WebSocket connected");
+      console.log("WebSocket connected", socket.id);
       setIsConnected(true);
     });
 
