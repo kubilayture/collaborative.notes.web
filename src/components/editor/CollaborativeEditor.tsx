@@ -176,15 +176,31 @@ export function CollaborativeEditor({
             cursor.classList.add("collaboration-cursor__caret");
             cursor.setAttribute("style", `border-color: ${user.color}`);
 
-            // Create circular user indicator with initials
+            // Create expandable user indicator
             const userIndicator = document.createElement("div");
             userIndicator.classList.add("collaboration-cursor__user-indicator");
             userIndicator.setAttribute("style", `background-color: ${user.color}`);
-            userIndicator.setAttribute("title", user.name); // Show name on hover
 
             // Get initials from user name
             const initials = getInitials(user.name);
-            userIndicator.textContent = initials;
+
+            // Create the content container
+            const content = document.createElement("span");
+            content.classList.add("collaboration-cursor__content");
+
+            // Create the initial letter
+            const initial = document.createElement("span");
+            initial.classList.add("collaboration-cursor__initial");
+            initial.textContent = initials;
+
+            // Create the full name (hidden by default)
+            const fullName = document.createElement("span");
+            fullName.classList.add("collaboration-cursor__fullname");
+            fullName.textContent = user.name;
+
+            content.appendChild(initial);
+            content.appendChild(fullName);
+            userIndicator.appendChild(content);
 
             cursor.appendChild(userIndicator);
 

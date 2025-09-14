@@ -225,35 +225,78 @@
     pointer-events: none;
   }
 
-  /* Custom circular user indicator */
+  /* Custom expandable user indicator */
   .collaboration-cursor__user-indicator {
     position: absolute;
     top: -2.8em;
     left: -12px;
-    width: 24px;
+    min-width: 24px;
     height: 24px;
-    border-radius: 50%;
+    border-radius: 12px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     font-size: 10px;
     font-weight: 600;
     color: white;
     user-select: none;
-    pointer-events: none;
+    pointer-events: auto;
     z-index: 15;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     border: 2px solid white;
+    transition: all 0.25s ease;
+    overflow: hidden;
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .collaboration-cursor__content {
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    transition: all 0.25s ease;
+  }
+
+  .collaboration-cursor__initial {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    transition: all 0.25s ease;
+  }
+
+  .collaboration-cursor__fullname {
+    opacity: 0;
+    max-width: 0;
+    padding-left: 0;
+    padding-right: 0;
+    transition: all 0.25s ease;
+    overflow: hidden;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  /* Hover state - expand to show full name */
+  .collaboration-cursor__user-indicator:hover {
+    border-radius: 12px;
+    padding-right: 8px;
+    min-width: auto;
+  }
+
+  .collaboration-cursor__user-indicator:hover .collaboration-cursor__fullname {
+    opacity: 1;
+    max-width: 120px;
+    padding-left: 4px;
+  }
+
+  .collaboration-cursor__user-indicator:hover .collaboration-cursor__initial {
+    margin-left: 2px;
   }
 
   .dark .collaboration-cursor__user-indicator {
     border-color: rgba(0, 0, 0, 0.1);
-  }
-
-  /* Hover effects for better interactivity */
-  .collaboration-cursor__caret:hover .collaboration-cursor__user-indicator {
-    transform: scale(1.1);
-    transition: transform 0.15s ease;
   }
 
   /* Animation for user indicators */
@@ -270,6 +313,5 @@
 
   .collaboration-cursor__user-indicator {
     animation: fadeInUp 0.2s ease-out;
-    cursor: help; /* Show that hovering will reveal info */
   }
 }
