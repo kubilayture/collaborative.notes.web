@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "../lib/api";
 import { useWebSocket } from "./useWebSocket";
+import { useSession } from "../lib/auth-client";
 
 export interface NotificationCounts {
   invitations: number;
@@ -12,6 +13,7 @@ export interface NotificationCounts {
 
 export const useNotificationCounts = () => {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
   const { on, off } = useWebSocket();
 
   const query = useQuery({
@@ -21,6 +23,7 @@ export const useNotificationCounts = () => {
       return res.data;
     },
     staleTime: 10_000,
+    enabled: !!session?.user,
   });
 
   useEffect(() => {
