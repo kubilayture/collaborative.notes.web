@@ -2,6 +2,8 @@ import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCursor from "@tiptap/extension-collaboration-cursor";
+import TaskList from "@tiptap/extension-task-list";
+import TaskItem from "@tiptap/extension-task-item";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import * as Y from "yjs";
 import { useEffect, useState, useCallback, useMemo } from "react";
@@ -157,6 +159,18 @@ export function CollaborativeEditor({
 
       Collaboration.configure({
         document: doc,
+      }),
+
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'task-list',
+        },
+      }),
+      TaskItem.configure({
+        HTMLAttributes: {
+          class: 'task-item',
+        },
+        nested: true,
       }),
     ];
 

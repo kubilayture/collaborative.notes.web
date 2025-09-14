@@ -15,6 +15,7 @@ import {
   Minus,
   Undo2,
   Redo2,
+  CheckSquare,
 } from "lucide-react";
 
 interface EditorToolbarProps {
@@ -51,6 +52,7 @@ export const EditorToolbar = ({
         isHeading6: ctx.editor.isActive("heading", { level: 6 }) ?? false,
         isBulletList: ctx.editor.isActive("bulletList") ?? false,
         isOrderedList: ctx.editor.isActive("orderedList") ?? false,
+        isTaskList: ctx.editor.isActive("taskList") ?? false,
         isCodeBlock: ctx.editor.isActive("codeBlock") ?? false,
         isBlockquote: ctx.editor.isActive("blockquote") ?? false,
         canUndo: ctx.editor.can().chain().undo().run() ?? false,
@@ -199,6 +201,16 @@ export const EditorToolbar = ({
           title="Numbered List"
         >
           <ListOrdered className="h-4 w-4" />
+        </Button>
+
+        <Button
+          variant={editorState.isTaskList ? "default" : "ghost"}
+          size="sm"
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
+          disabled={!editable}
+          title="Checkbox List"
+        >
+          <CheckSquare className="h-4 w-4" />
         </Button>
 
         <Separator orientation="vertical" className="h-6" />
@@ -393,6 +405,17 @@ export const EditorToolbar = ({
               className="flex-shrink-0"
             >
               <ListOrdered className="h-4 w-4" />
+            </Button>
+
+            <Button
+              variant={editorState.isTaskList ? "default" : "ghost"}
+              size="sm"
+              onClick={() => editor.chain().focus().toggleTaskList().run()}
+              disabled={!editable}
+              title="Checkbox List"
+              className="flex-shrink-0"
+            >
+              <CheckSquare className="h-4 w-4" />
             </Button>
 
             <div className="w-px h-6 bg-border mx-1 flex-shrink-0"></div>
