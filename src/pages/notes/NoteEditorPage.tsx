@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useNote, useUpdateNote, useDeleteNote, contentToText } from "../../hooks/notes.hook";
+import {
+  useNote,
+  useUpdateNote,
+  useDeleteNote,
+  contentToText,
+} from "../../hooks/notes.hook";
 import { useSession } from "../../lib/auth-client";
 import { CollaborativeEditor } from "../../components/editor/CollaborativeEditor";
 import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
@@ -9,24 +14,24 @@ import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { Badge } from "../../components/ui/badge";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from "../../components/ui/dropdown-menu";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
-import { 
-  ArrowLeft, 
-  Save, 
-  MoreVertical, 
-  Trash2, 
-  Users, 
-  Clock, 
+import {
+  ArrowLeft,
+  Save,
+  MoreVertical,
+  Trash2,
+  Users,
+  Clock,
   Lock,
-  Pencil
+  Pencil,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
@@ -35,18 +40,18 @@ export function NoteEditorPage() {
   const navigate = useNavigate();
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-  
+
   const { data: note, isLoading, error, refetch } = useNote(noteId!);
   const updateNote = useUpdateNote();
   const deleteNote = useDeleteNote();
 
   useEffect(() => {
     if (noteId) {
-      queryClient.invalidateQueries({ queryKey: ['note', noteId] });
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      queryClient.invalidateQueries({ queryKey: ["note", noteId] });
+      queryClient.invalidateQueries({ queryKey: ["notes"] });
     }
   }, [noteId, queryClient]);
-  
+
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
@@ -74,30 +79,37 @@ export function NoteEditorPage() {
   if (!note) return <Error message="Note not found" />;
 
   const isOwner = note.ownerId === session?.user?.id;
-  const userPermission = note.permissions?.find(p => p.userId === session?.user?.id);
+  const userPermission = note.permissions?.find(
+    (p) => p.userId === session?.user?.id
+  );
   const canEdit = isOwner || userPermission?.permission === "WRITE";
   const canDelete = isOwner;
 
   const handleSave = async () => {
     if (!hasChanges) return;
-    
+
     updateNote.mutate({
       id: note.id,
       data: {
         title: title.trim(),
         content: editorContent.trim(),
-      }
+      },
     });
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Are you sure you want to delete this note? This action cannot be undone.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this note? This action cannot be undone."
+      )
+    ) {
       deleteNote.mutate(note.id);
     }
   };
 
   const handleBack = () => {
-    navigate("/notes");
+    const to = note.folderId ? `/notes/folder/${note.folderId}` : "/notes";
+    navigate(to);
   };
 
   const getPermissionLevel = () => {
@@ -151,16 +163,30 @@ export function NoteEditorPage() {
                 disabled={!hasChanges || updateNote.isPending}
                 variant={hasChanges ? "default" : "outline"}
                 className="h-input px-2 sm:px-4"
-                title={updateNote.isPending ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+                title={
+                  updateNote.isPending
+                    ? "Saving..."
+                    : hasChanges
+                    ? "Save Changes"
+                    : "Saved"
+                }
               >
                 <Save className="h-4 w-4" />
                 {/* Show text on larger screens */}
                 <span className="hidden md:inline ml-2">
-                  {updateNote.isPending ? "Saving..." : hasChanges ? "Save Changes" : "Saved"}
+                  {updateNote.isPending
+                    ? "Saving..."
+                    : hasChanges
+                    ? "Save Changes"
+                    : "Saved"}
                 </span>
                 {/* Show shorter text on medium screens */}
                 <span className="hidden sm:inline md:hidden ml-2">
-                  {updateNote.isPending ? "Saving..." : hasChanges ? "Save" : "Saved"}
+                  {updateNote.isPending
+                    ? "Saving..."
+                    : hasChanges
+                    ? "Save"
+                    : "Saved"}
                 </span>
               </Button>
             )}
@@ -198,18 +224,44 @@ export function NoteEditorPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-1">
-            <Clock className="h-3 w-3" />
-            Last updated {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
+        <div className="flex items-center gap-2 sm:gap-4 text-sm text-muted-foreground">
+          <div
+            className="flex items-center gap-1"
+            title={`Last updated ${formatDistanceToNow(note.updatedAt)}`}
+          >
+            <Clock className="h-5 w-5 sm:h-3 sm:w-3" />
+            <span className="sm:hidden">
+              {formatDistanceToNow(note.updatedAt, { addSuffix: false })}
+            </span>
+            <span className="hidden sm:inline">
+              Last updated {formatDistanceToNow(note.updatedAt)}
+            </span>
           </div>
-          <div>
-            Created by {isOwner ? "You" : note.owner.name}
+          <div
+            className="flex items-center gap-1"
+            title={`Created by ${isOwner ? "You" : note.owner.name}`}
+          >
+            <Pencil className="h-5 w-5 sm:h-3 sm:w-3" />
+            <span className="sm:hidden">
+              {isOwner ? "You" : note.owner.name}
+            </span>
+            <span className="hidden sm:inline">
+              Created by {isOwner ? "You" : note.owner.name}
+            </span>
           </div>
           {note.permissions && note.permissions.length > 0 && (
-            <div className="flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {note.permissions.length + 1} collaborator{note.permissions.length > 0 ? "s" : ""}
+            <div
+              className="flex items-center gap-1"
+              title={`${note.permissions.length + 1} collaborator${
+                note.permissions.length > 0 ? "s" : ""
+              }`}
+            >
+              <Users className="h-5 w-5 sm:h-3 sm:w-3" />
+              <span className="sm:hidden">{note.permissions.length + 1}</span>
+              <span className="hidden sm:inline">
+                {note.permissions.length + 1} collaborator
+                {note.permissions.length > 0 ? "s" : ""}
+              </span>
             </div>
           )}
         </div>
@@ -238,24 +290,21 @@ export function NoteEditorPage() {
               </div>
             )}
           </div>
-          
+
           <CollaborativeEditor
             noteId={note.id}
             initialContent={contentToText(note.content)}
             editable={canEdit}
             onUpdate={setEditorContent}
           />
-          
+
           <p className="text-xs text-muted-foreground">
-            {canEdit ? (
-              "Real-time collaborative editing enabled. Changes are synced automatically and saved manually."
-            ) : (
-              "You don't have edit permissions for this note."
-            )}
+            {canEdit
+              ? "Real-time collaborative editing enabled. Changes are synced automatically and saved manually."
+              : "You don't have edit permissions for this note."}
           </p>
         </div>
       </div>
-
 
       {/* Share & Permissions Dialog */}
       <SharePermissionsDialog
