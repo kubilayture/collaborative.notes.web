@@ -60,7 +60,7 @@ My modern React frontend for collaborative note-taking - a sleek, responsive web
 
 - Node.js (v18 or higher)
 - npm or yarn
-- Backend server running (see [collaborative.notes.backend](../collaborative.notes.backend))
+- Backend server running (see [collaborative.notes.backend](https://github.com/kubilayture/collaborative.notes.backend))
 
 ### Installation
 
