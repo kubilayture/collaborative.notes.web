@@ -399,7 +399,7 @@ export function HomePage() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-8">
                 <Button
                   size="lg"
-                  onClick={() => navigate("/signup")}
+                  onClick={() => navigate("/sign-up")}
                   className="bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-600 hover:to-blue-700 text-white px-8 py-6 text-lg font-semibold rounded-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl animate-float"
                 >
                   Get Started Free
