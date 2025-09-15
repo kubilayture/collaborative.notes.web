@@ -67,7 +67,7 @@ My modern React frontend for collaborative note-taking - a sleek, responsive web
 1. **Clone the repository**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/kubilayture/collaborative.notes.web.git
    cd collaborative.notes.web
    ```
 
