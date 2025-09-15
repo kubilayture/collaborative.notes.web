@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCreateNote } from "../../hooks/notes.hook";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Label } from "../../components/ui/label";
 import { FolderSelect } from "../../components/folders/FolderSelect";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import { ArrowLeft, Save } from "lucide-react";
 
 export function NewNotePage() {
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [folderId, setFolderId] = useState<string | null>(null);
+  const { folderId: folderIdParam } = useParams<{ folderId: string }>();
+  const [folderId, setFolderId] = useState<string | null>(folderIdParam || null);
+
+  // Update folderId when URL params change
+  useEffect(() => {
+    setFolderId(folderIdParam || null);
+  }, [folderIdParam]);
   const createNote = useCreateNote();
   const navigate = useNavigate();
 
@@ -23,6 +29,11 @@ export function NewNotePage() {
       title: title.trim(),
       content: content.trim(),
       folderId: folderId || undefined,
+    }, {
+      onSuccess: () => {
+        // Navigate back to the correct folder context
+        navigate(folderIdParam ? `/notes/folder/${folderIdParam}` : "/notes");
+      }
     });
   };
 
@@ -31,7 +42,7 @@ export function NewNotePage() {
     if (hasChanges && !window.confirm("Are you sure you want to cancel? Your changes will be lost.")) {
       return;
     }
-    navigate("/notes");
+    navigate(folderIdParam ? `/notes/folder/${folderIdParam}` : "/notes");
   };
 
   return (

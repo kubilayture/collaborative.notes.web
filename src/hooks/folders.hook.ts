@@ -45,7 +45,10 @@ async function createFolder(data: CreateFolderData): Promise<Folder> {
   return response.data;
 }
 
-async function updateFolder(id: string, data: UpdateFolderData): Promise<Folder> {
+async function updateFolder(
+  id: string,
+  data: UpdateFolderData
+): Promise<Folder> {
   const response = await api.patch<Folder>(`/folders/${id}`, data);
   return response.data;
 }
@@ -64,12 +67,38 @@ async function getFolderPath(folderId: string): Promise<Folder[]> {
   return response.data;
 }
 
-// Hooks
 export function useFolders(parentId?: string) {
   return useQuery({
     queryKey: ["folders", parentId],
     queryFn: () => fetchFolders(parentId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useAllFolders() {
+  return useQuery({
+    queryKey: ["folders", "all"],
+    queryFn: async (): Promise<Folder[]> => {
+      // Get all folders by fetching all levels
+      // For simplicity, we'll use the same endpoint but fetch recursively
+      const getAllFoldersRecursive = async (
+        parentId?: string
+      ): Promise<Folder[]> => {
+        const folders = await fetchFolders(parentId);
+        const allFolders = [...folders];
+
+        // Recursively fetch subfolders
+        for (const folder of folders) {
+          const subfolders = await getAllFoldersRecursive(folder.id);
+          allFolders.push(...subfolders);
+        }
+
+        return allFolders;
+      };
+
+      return getAllFoldersRecursive();
+    },
+    staleTime: 5 * 60 * 1000,
   });
 }
 
@@ -158,6 +187,6 @@ export function useFolderPath(folderId?: string) {
     queryKey: ["folder-path", folderId],
     queryFn: () => getFolderPath(folderId!),
     enabled: !!folderId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 5 * 60 * 1000,
   });
 }

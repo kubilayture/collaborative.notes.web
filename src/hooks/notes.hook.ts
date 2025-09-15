@@ -116,11 +116,19 @@ export interface PaginatedNotesResponse {
   hasPrev: boolean;
 }
 
-export const useNotes = () => {
+export const useNotes = (folderId?: string | null) => {
   return useQuery({
-    queryKey: ["notes"],
+    queryKey: ["notes", folderId],
     queryFn: async (): Promise<Note[]> => {
-      const response = await api.get<PaginatedNotesResponse>("/notes");
+      const params: any = {};
+      if (folderId !== undefined) {
+        params.folderId = folderId;
+      } else {
+        params.folderId = "null";
+      }
+      const response = await api.get<PaginatedNotesResponse>("/notes", {
+        params,
+      });
       return response.data.notes;
     },
   });
@@ -146,6 +154,7 @@ export const useCreateNote = () => {
       const payload = {
         title: data.title,
         content: textToContent(data.content),
+        folderId: data.folderId,
       };
 
       const response = await api.post<Note>("/notes", payload);

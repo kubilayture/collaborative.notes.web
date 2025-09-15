@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   Select,
   SelectContent,
@@ -6,7 +5,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "../ui/select";
-import { useFolders, type Folder } from "../../hooks/folders.hook";
+import { useAllFolders } from "../../hooks/folders.hook";
 import { FolderIcon } from "lucide-react";
 
 interface FolderSelectProps {
@@ -20,9 +19,9 @@ export function FolderSelect({
   value,
   onValueChange,
   placeholder = "Select a folder",
-  allowRoot = true
+  allowRoot = true,
 }: FolderSelectProps) {
-  const { data: folders, isLoading } = useFolders();
+  const { data: folders, isLoading } = useAllFolders();
 
   const handleValueChange = (selectedValue: string) => {
     if (selectedValue === "root") {
@@ -32,10 +31,14 @@ export function FolderSelect({
     }
   };
 
-  const currentValue = value || "root";
+  const currentValue = value ?? "root";
 
   return (
-    <Select value={currentValue} onValueChange={handleValueChange} disabled={isLoading}>
+    <Select
+      value={currentValue}
+      onValueChange={handleValueChange}
+      disabled={isLoading}
+    >
       <SelectTrigger>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>

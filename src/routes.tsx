@@ -46,7 +46,23 @@ export const RoutesContainer = () => {
           }
         />
         <Route
+          path="notes/folder/:folderId"
+          element={
+            <ProtectedRoute>
+              <NotesListPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="notes/new"
+          element={
+            <ProtectedRoute>
+              <NewNotePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="notes/new/:folderId"
           element={
             <ProtectedRoute>
               <NewNotePage />

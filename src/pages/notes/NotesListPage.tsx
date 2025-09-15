@@ -7,6 +7,7 @@ import {
   type Note,
   contentToPlainText,
 } from "../../hooks/notes.hook";
+import { useFolders, useDeleteFolder } from "../../hooks/folders.hook";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -25,7 +26,8 @@ import {
 } from "../../components/ui/dropdown-menu";
 import { MoveNoteDialog } from "../../components/folders/MoveNoteDialog";
 import { CreateFolderDialog } from "../../components/folders/CreateFolderDialog";
-import { useNavigate } from "react-router";
+import { FolderBreadcrumb } from "../../components/folders/FolderBreadcrumb";
+import { useNavigate, useParams } from "react-router";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
 import {
@@ -38,6 +40,8 @@ import {
   Share2,
   FolderOpen,
   FolderPlus,
+  Folder,
+  FileText,
 } from "lucide-react";
 import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
 import { formatDistanceToNow } from "date-fns";
@@ -51,15 +55,18 @@ export function NotesListPage() {
   const [createFolderOpen, setCreateFolderOpen] = useState(false);
   const { data: session } = useSession();
   const queryClient = useQueryClient();
-  const { data: notes, isLoading, error, refetch } = useNotes();
+  const { folderId } = useParams<{ folderId: string }>();
+  const { data: notes, isLoading, error, refetch } = useNotes(folderId);
+  const { data: folders, isLoading: foldersLoading } = useFolders(folderId);
   const deleteNote = useDeleteNote();
+  const deleteFolder = useDeleteFolder();
   const navigate = useNavigate();
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ["notes"] });
   }, [queryClient]);
 
-  if (isLoading) return <Loading />;
+  if (isLoading || foldersLoading) return <Loading />;
   if (error) return <Error message="Failed to load notes" onRetry={refetch} />;
 
   const filteredNotes =
@@ -78,6 +85,16 @@ export function NotesListPage() {
       )
     ) {
       deleteNote.mutate(noteId);
+    }
+  };
+
+  const handleDeleteFolder = async (folderId: string) => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this folder? This will also delete all notes inside it. This action cannot be undone."
+      )
+    ) {
+      deleteFolder.mutate(folderId);
     }
   };
 
@@ -103,6 +120,7 @@ export function NotesListPage() {
 
   return (
     <div className="container mx-auto p-6">
+      <FolderBreadcrumb currentFolderId={folderId} />
       <div className="mb-8">
         <div className="flex items-center justify-between mb-6 gap-4">
           <div>
@@ -115,11 +133,18 @@ export function NotesListPage() {
             <Button
               onClick={() => setCreateFolderOpen(true)}
               title="New Folder"
+              variant="ghost"
             >
               <FolderPlus className="h-4 w-4" />
               <span className="hidden sm:inline sm:ml-2">New Folder</span>
             </Button>
-            <Button onClick={() => navigate("/notes/new")} title="New Note">
+            <Button
+              onClick={() =>
+                navigate(folderId ? `/notes/new/${folderId}` : "/notes/new")
+              }
+              title="New Note"
+              variant="ghost"
+            >
               <Plus className="h-4 w-4" />
               <span className="hidden sm:inline sm:ml-2">New Note</span>
             </Button>
@@ -137,7 +162,7 @@ export function NotesListPage() {
         </div>
       </div>
 
-      {filteredNotes.length === 0 ? (
+      {folders?.length === 0 && filteredNotes.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <div className="text-center">
@@ -150,7 +175,11 @@ export function NotesListPage() {
                   : "Create your first note to get started with collaborative editing"}
               </p>
               {!searchQuery && (
-                <Button onClick={() => navigate("/notes/new")}>
+                <Button
+                  onClick={() =>
+                    navigate(folderId ? `/notes/new/${folderId}` : "/notes/new")
+                  }
+                >
                   <Plus className="h-4 w-4 mr-2" />
                   Create Note
                 </Button>
@@ -160,6 +189,70 @@ export function NotesListPage() {
         </Card>
       ) : (
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+          {/* Render Folders */}
+          {folders?.map((folder) => (
+            <Card
+              key={folder.id}
+              className="group hover:shadow-md transition-shadow cursor-pointer"
+              onClick={() => navigate(`/notes/folder/${folder.id}`)}
+            >
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1 min-w-0">
+                    <CardTitle className="text-lg truncate mb-2 flex items-center">
+                      <Folder className="h-5 w-5 mr-2 text-blue-500" />
+                      {folder.name}
+                    </CardTitle>
+                    {folder.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {folder.description}
+                      </p>
+                    )}
+                  </div>
+
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteFolder(folder.id);
+                        }}
+                        className="text-destructive focus:text-destructive"
+                        disabled={deleteFolder.isPending}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Folder
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <span className="flex items-center">
+                    <FileText className="h-4 w-4 mr-1" />
+                    {folder.noteCount || 0} notes
+                  </span>
+                  <span className="flex items-center">
+                    <Folder className="h-4 w-4 mr-1" />
+                    {folder.subfolderCount || 0} folders
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+
+          {/* Render Notes */}
           {filteredNotes.map((note) => {
             const permissionLevel = getNotePermissionLevel(note);
             const isOwner = note.ownerId === session?.user?.id;
@@ -294,6 +387,7 @@ export function NotesListPage() {
       <CreateFolderDialog
         open={createFolderOpen}
         onOpenChange={setCreateFolderOpen}
+        parentId={folderId}
       />
     </div>
   );
