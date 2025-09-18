@@ -7,14 +7,12 @@ import { useMarkThreadMessagesRead } from "../../hooks/notifications.hook";
 import {
   useThread,
   useMessages,
-  useSendMessage,
   useDeleteMessage,
   useAddParticipant,
   useLeaveThread,
 } from "../../hooks/messaging.hook";
 import { useFriends } from "../../hooks/friends.hook";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent } from "../../components/ui/card";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
 import {
@@ -134,7 +132,7 @@ export function ThreadPage() {
       };
       isTyping: boolean;
     }) => {
-      if (data.userId === session?.user?.id) return; // Ignore own typing
+      if (data.userId === session?.user?.id) return;
 
       setTypingUsers((prev) => {
         if (data.isTyping) {
@@ -257,226 +255,335 @@ export function ThreadPage() {
       (f) => !thread.participants.some((p) => p.user.id === f.friend.id)
     ) || [];
 
+  // Helper function to get initials from name
+  const getInitials = (name: string): string => {
+    if (!name) return "?";
+    const words = name.trim().split(/\s+/);
+    if (words.length === 1) {
+      return words[0].charAt(0).toUpperCase();
+    }
+    return (
+      words[0].charAt(0) + words[words.length - 1].charAt(0)
+    ).toUpperCase();
+  };
+
+  // Helper function to generate consistent colors based on user ID
+  const generateUserColor = (userId: string): string => {
+    const colors = [
+      "#FF6B6B",
+      "#4ECDC4",
+      "#45B7D1",
+      "#96CEB4",
+      "#FFEAA7",
+      "#DDA0DD",
+      "#98D8C8",
+      "#F7DC6F",
+      "#BB8FCE",
+      "#85C1E9",
+    ];
+    let hash = 0;
+    for (let i = 0; i < userId.length; i++) {
+      hash = ((hash << 5) - hash + userId.charCodeAt(i)) & 0xffffffff;
+    }
+    return colors[Math.abs(hash) % colors.length];
+  };
+
   return (
-    <div className="container mx-auto p-6 h-[calc(100vh-120px)] flex flex-col">
+    <div className="bg-background h-[calc(100vh-56px)] flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 pb-4 border-b">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => navigate("/messaging")}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
+      <div className="h-16 border-b border-border bg-card/50 backdrop-blur-sm flex items-center px-6 gap-4 flex-shrink-0">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => navigate("/messaging")}
+          className="lg:hidden"
+        >
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+
+        <div className="flex items-center gap-3 flex-1">
+          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Users className="h-5 w-5 text-primary" />
+          </div>
           <div>
-            <h1 className="text-2xl font-bold">{thread.name}</h1>
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Users className="h-4 w-4" />
+            <h1 className="font-semibold text-lg">{thread.name}</h1>
+            <p className="text-sm text-muted-foreground">
               {thread.participants.length} participants
-            </div>
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <div className="flex flex-wrap gap-1">
-            {thread.participants.slice(0, 3).map((participant) => (
-              <Badge
-                key={participant.user.id}
-                variant="outline"
-                className="text-xs"
-              >
-                {participant.user.name}
-              </Badge>
-            ))}
-            {thread.participants.length > 3 && (
-              <Badge
-                key="more-participants"
-                variant="outline"
-                className="text-xs"
-              >
-                +{thread.participants.length - 3} more
-              </Badge>
-            )}
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm">
-                <MoreVertical className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <Dialog
-                open={isAddParticipantOpen}
-                onOpenChange={setIsAddParticipantOpen}
-              >
-                <DialogTrigger asChild>
-                  <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
-                    <UserPlus className="h-4 w-4 mr-2" />
-                    Add Participant
-                  </DropdownMenuItem>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Participant</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4">
-                    <div>
-                      <label className="text-sm font-medium">
-                        Select Friend
-                      </label>
-                      <Select
-                        value={selectedFriend}
-                        onValueChange={setSelectedFriend}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a friend to add" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {availableFriends.map((friendItem) => (
-                            <SelectItem
-                              key={friendItem.friend.id}
-                              value={friendItem.friend.id}
-                            >
-                              {friendItem.friend.name} (
-                              {friendItem.friend.email})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div className="flex gap-2 pt-4">
-                      <Button
-                        onClick={handleAddParticipant}
-                        disabled={!selectedFriend || addParticipant.isPending}
-                        className="flex-1"
-                      >
-                        {addParticipant.isPending
-                          ? "Adding..."
-                          : "Add Participant"}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => setIsAddParticipantOpen(false)}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm">
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <Dialog
+              open={isAddParticipantOpen}
+              onOpenChange={setIsAddParticipantOpen}
+            >
+              <DialogTrigger asChild>
+                <DropdownMenuItem onSelect={(e) => e.preventDefault()}>
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Participant
+                </DropdownMenuItem>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add Participant</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <div>
+                    <label className="text-sm font-medium">Select Friend</label>
+                    <Select
+                      value={selectedFriend}
+                      onValueChange={setSelectedFriend}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Choose a friend to add" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableFriends.map((friendItem) => (
+                          <SelectItem
+                            key={friendItem.friend.id}
+                            value={friendItem.friend.id}
+                          >
+                            {friendItem.friend.name} ({friendItem.friend.email})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
-                </DialogContent>
-              </Dialog>
-              <DropdownMenuItem
-                onClick={handleLeaveThread}
-                className="text-destructive focus:text-destructive"
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                Leave Conversation
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      onClick={handleAddParticipant}
+                      disabled={!selectedFriend || addParticipant.isPending}
+                      className="flex-1"
+                    >
+                      {addParticipant.isPending
+                        ? "Adding..."
+                        : "Add Participant"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      onClick={() => setIsAddParticipantOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+            <DropdownMenuItem
+              onClick={handleLeaveThread}
+              className="text-destructive focus:text-destructive"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Leave Conversation
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto mb-4 space-y-4">
-        {!messages || messages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <div className="text-center">
-              <p className="text-muted-foreground">No messages yet</p>
-              <p className="text-sm text-muted-foreground">
-                Send the first message to start the conversation!
-              </p>
-            </div>
-          </div>
-        ) : (
-          messages.map((message) => {
-            const isOwnMessage = message.senderId === session?.user?.id;
+      {/* Main Content Area */}
+      <div className="flex flex-1 min-h-0 overflow-hidden">
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col min-h-0">
+          {/* Messages Area */}
+          <div className="flex-1 overflow-y-auto space-y-4 px-6 py-6">
+            {!messages || messages.length === 0 ? (
+              <div className="flex items-center justify-center h-full">
+                <div className="text-center">
+                  <div className="w-16 h-16 mx-auto rounded-full bg-muted/50 flex items-center justify-center mb-4">
+                    <Users className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground font-medium">
+                    No messages yet
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    Send the first message to start the conversation!
+                  </p>
+                </div>
+              </div>
+            ) : (
+              messages.map((message) => {
+                const isOwnMessage = message.senderId === session?.user?.id;
+                const senderColor = generateUserColor(message.senderId);
 
-            return (
-              <div
-                key={message.id}
-                className={`flex ${
-                  isOwnMessage ? "justify-end" : "justify-start"
-                }`}
-              >
-                <Card
-                  className={`max-w-[70%] ${
-                    isOwnMessage ? "bg-primary text-primary-foreground" : ""
-                  }`}
-                >
-                  <CardContent className="p-3">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium">
-                        {isOwnMessage ? "You" : message.sender.name}
-                      </span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs opacity-70">
-                          {formatDistanceToNow(new Date(message.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </span>
-                        {isOwnMessage && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteMessage(message.id)}
-                            className="h-6 w-6 p-0 opacity-70 hover:opacity-100"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        )}
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex gap-3 items-end ${
+                      isOwnMessage ? "flex-row-reverse" : "flex-row"
+                    }`}
+                  >
+                    {/* Avatar */}
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
+                      style={{ backgroundColor: senderColor }}
+                    >
+                      {getInitials(
+                        isOwnMessage
+                          ? session?.user?.name || "You"
+                          : message.sender.name
+                      )}
+                    </div>
+
+                    {/* Message Bubble */}
+                    <div
+                      className={`max-w-[60%] flex flex-col ${
+                        isOwnMessage ? "items-end" : "items-start"
+                      }`}
+                    >
+                      <div
+                        className={`rounded-2xl px-4 py-3 relative ${
+                          isOwnMessage
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-card border border-border"
+                        }`}
+                      >
+                        <p className="text-sm whitespace-pre-wrap leading-relaxed mb-1">
+                          {message.content}
+                        </p>
+
+                        {/* Timestamp in bottom right corner */}
+                        <div
+                          className={`flex items-center gap-2 mt-1 justify-end ${
+                            isOwnMessage
+                              ? "text-primary-foreground/70"
+                              : "text-muted-foreground"
+                          }`}
+                        >
+                          <span className="text-xs">
+                            {formatDistanceToNow(new Date(message.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </span>
+                          {isOwnMessage && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteMessage(message.id)}
+                              className="h-4 w-4 p-0 opacity-70 hover:opacity-100 hover:bg-primary-foreground/20"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <p className="text-sm whitespace-pre-wrap">
-                      {message.content}
-                    </p>
-                  </CardContent>
-                </Card>
+                  </div>
+                );
+              })
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+
+          {/* Input Area - Fixed at bottom */}
+          <div className="border-t border-border bg-background flex-shrink-0">
+            {/* Connection Status */}
+            {!isConnected && (
+              <div className="px-6 py-2 text-sm text-destructive bg-destructive/10 border-b border-destructive/20">
+                ⚠️ Connection lost - real-time messaging unavailable
               </div>
-            );
-          })
-        )}
-        <div ref={messagesEndRef} />
+            )}
+
+            {/* Typing Indicator */}
+            {typingUsers.length > 0 && (
+              <div className="px-6 py-2 text-sm text-muted-foreground italic bg-muted/30 border-b border-border">
+                {typingUsers.length === 1
+                  ? `${typingUsers[0]} is typing...`
+                  : `${typingUsers.slice(0, -1).join(", ")} and ${
+                      typingUsers[typingUsers.length - 1]
+                    } are typing...`}
+              </div>
+            )}
+
+            {/* Message Input */}
+            <div className="p-6">
+              <form onSubmit={handleSendMessage} className="flex gap-3">
+                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                  <span className="text-sm font-medium text-primary">
+                    {getInitials(session?.user?.name || "You")}
+                  </span>
+                </div>
+                <div className="flex-1 flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => {
+                      setNewMessage(e.target.value);
+                      handleTyping();
+                    }}
+                    className="flex-1 rounded-full border-muted-foreground/20 bg-muted/30"
+                  />
+                  <Button
+                    type="submit"
+                    disabled={!newMessage.trim() || !isConnected}
+                    title={!isConnected ? "Connection lost" : "Send message"}
+                    className="rounded-full w-10 h-10 p-0"
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        {/* Participants Sidebar - Desktop Only */}
+        <div className="hidden lg:flex w-80 border-l border-border bg-card/30 backdrop-blur-sm flex-col min-h-0">
+          <div className="p-4 border-b border-border flex-shrink-0">
+            <h2 className="font-semibold text-lg mb-1">Participants</h2>
+            <p className="text-sm text-muted-foreground">
+              {thread.participants.length} members
+            </p>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="space-y-3">
+              {thread.participants.map((participant) => {
+                const isCurrentUser = participant.user.id === session?.user?.id;
+                const userColor = generateUserColor(participant.user.id);
+
+                return (
+                  <div
+                    key={participant.user.id}
+                    className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div
+                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                      style={{ backgroundColor: userColor }}
+                    >
+                      {getInitials(participant.user.name)}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium text-sm truncate">
+                          {participant.user.name}
+                        </p>
+                        {isCurrentUser && (
+                          <Badge
+                            variant="secondary"
+                            className="text-xs px-2 py-0"
+                          >
+                            You
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground capitalize">
+                        {participant.role?.toLowerCase() || "Member"}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
       </div>
-
-      {/* Connection Status */}
-      {!isConnected && (
-        <div className="text-sm text-destructive bg-destructive/10 p-2 rounded mb-2">
-          ⚠️ WebSocket disconnected - real-time messaging unavailable
-        </div>
-      )}
-
-      {/* Typing Indicator */}
-      {typingUsers.length > 0 && (
-        <div className="text-sm text-muted-foreground italic mb-2">
-          {typingUsers.length === 1
-            ? `${typingUsers[0]} is typing...`
-            : `${typingUsers.slice(0, -1).join(", ")} and ${
-                typingUsers[typingUsers.length - 1]
-              } are typing...`}
-        </div>
-      )}
-
-      {/* Message Input */}
-      <form onSubmit={handleSendMessage} className="flex gap-2">
-        <Input
-          placeholder="Type your message..."
-          value={newMessage}
-          onChange={(e) => {
-            setNewMessage(e.target.value);
-            handleTyping();
-          }}
-          className="flex-1"
-        />
-        <Button
-          type="submit"
-          disabled={!newMessage.trim() || !isConnected}
-          title={!isConnected ? "WebSocket disconnected" : "Send message"}
-        >
-          <Send className="h-4 w-4" />
-        </Button>
-      </form>
     </div>
   );
 }
