@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useMarkAllRead } from "../../hooks/notifications.hook";
+import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -78,55 +79,38 @@ export function InvitationsPage() {
   } = useQuery({
     queryKey: ["my-invitations"],
     queryFn: async (): Promise<Invitation[]> => {
-      const response = await fetch("/api/invitations", {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to fetch invitations");
-      }
-      return response.json();
+      const response = await api.get("/api/invitations");
+      return response.data;
     },
   });
 
   // Accept invitation mutation
   const acceptInvitation = useMutation({
     mutationFn: async (token: string) => {
-      const response = await fetch(`/api/invitations/${token}/accept`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to accept invitation");
-      }
-      return response.json();
+      const response = await api.post(`/api/invitations/${token}/accept`);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
       toast.success("Invitation accepted successfully!");
     },
-    onError: () => {
-      toast.error("Failed to accept invitation");
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.message || "Failed to accept invitation");
     },
   });
 
   // Decline invitation mutation
   const declineInvitation = useMutation({
     mutationFn: async (token: string) => {
-      const response = await fetch(`/api/invitations/${token}/decline`, {
-        method: "POST",
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error("Failed to decline invitation");
-      }
-      return response.json();
+      const response = await api.post(`/api/invitations/${token}/decline`);
+      return response.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["my-invitations"] });
       toast.success("Invitation declined");
     },
-    onError: () => {
-      toast.error("Failed to decline invitation");
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.message || "Failed to decline invitation");
     },
   });
 

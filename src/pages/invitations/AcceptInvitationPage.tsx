@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "../../lib/auth-client";
+import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
@@ -66,14 +67,8 @@ export function AcceptInvitationPage() {
   const { data: invitation, isLoading, error, refetch } = useQuery({
     queryKey: ['invitation', token],
     queryFn: async () => {
-      const response = await fetch(`/api/invitations/token/${token}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to fetch invitation');
-      }
-      return response.json();
+      const response = await api.get(`/api/invitations/token/${token}`);
+      return response.data;
     },
     enabled: !!token,
   });
@@ -81,15 +76,8 @@ export function AcceptInvitationPage() {
   // Accept invitation mutation
   const acceptInvitation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/invitations/${token}/accept`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to accept invitation');
-      }
-      return response.json();
+      const response = await api.patch(`/api/invitations/${token}/accept`);
+      return response.data;
     },
     onSuccess: (data) => {
       toast.success(data.message);
@@ -98,7 +86,7 @@ export function AcceptInvitationPage() {
       navigate(`/notes/${invitation.note.id}`);
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message || 'Failed to accept invitation');
       setIsAccepting(false);
     },
   });
@@ -106,15 +94,8 @@ export function AcceptInvitationPage() {
   // Decline invitation mutation
   const declineInvitation = useMutation({
     mutationFn: async () => {
-      const response = await fetch(`/api/invitations/${token}/decline`, {
-        method: 'PATCH',
-        credentials: 'include',
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to decline invitation');
-      }
-      return response.json();
+      const response = await api.patch(`/api/invitations/${token}/decline`);
+      return response.data;
     },
     onSuccess: (data) => {
       toast.success(data.message);
@@ -122,7 +103,7 @@ export function AcceptInvitationPage() {
       navigate('/notes');
     },
     onError: (error: any) => {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message || 'Failed to decline invitation');
       setIsDeclining(false);
     },
   });

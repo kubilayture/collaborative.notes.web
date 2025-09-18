@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { api } from "../../lib/api";
 import {
   Dialog,
   DialogContent,
@@ -41,22 +42,23 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "../ui/alert-dialog";
-import { 
-  Users, 
-  Mail, 
-  X, 
-  Crown, 
-  Eye, 
-  Edit3, 
-  MessageSquare, 
-  Plus,
+import {
+  Users,
+  Mail,
+  X,
+  Crown,
+  Eye,
+  Edit3,
+  MessageSquare,
   Copy,
   Check,
-  Trash2,
-  Send
+  Send,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { FriendsSelector, type SelectedFriend } from "../friends/FriendsSelector";
+import {
+  FriendsSelector,
+  type SelectedFriend,
+} from "../friends/FriendsSelector";
 
 interface User {
   id: string;
@@ -77,10 +79,24 @@ interface Invitation {
   token: string;
   inviteeEmail: string;
   invitee?: User;
-  role: 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  role: "OWNER" | "EDITOR" | "COMMENTER" | "VIEWER";
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED";
   expiresAt: string;
   createdAt: string;
+}
+
+interface Permission {
+  id: string;
+  userId: string;
+  role: "owner" | "editor" | "commenter" | "viewer";
+  user?: User;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface SharingData {
+  invitations: Invitation[];
+  permissions: Permission[];
 }
 
 interface SharePermissionsDialogProps {
@@ -90,101 +106,105 @@ interface SharePermissionsDialogProps {
 }
 
 const roleLabels = {
-  OWNER: { label: "Owner", icon: Crown, color: "bg-yellow-100 text-yellow-800" },
+  OWNER: {
+    label: "Owner",
+    icon: Crown,
+    color: "bg-yellow-100 text-yellow-800",
+  },
   EDITOR: { label: "Editor", icon: Edit3, color: "bg-blue-100 text-blue-800" },
-  COMMENTER: { label: "Commenter", icon: MessageSquare, color: "bg-green-100 text-green-800" },
+  COMMENTER: {
+    label: "Commenter",
+    icon: MessageSquare,
+    color: "bg-green-100 text-green-800",
+  },
   VIEWER: { label: "Viewer", icon: Eye, color: "bg-gray-100 text-gray-800" },
 };
 
-export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermissionsDialogProps) {
+export function SharePermissionsDialog({
+  note,
+  open,
+  onOpenChange,
+}: SharePermissionsDialogProps) {
   const queryClient = useQueryClient();
-  
+
   const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState<'EDITOR' | 'COMMENTER' | 'VIEWER'>('VIEWER');
+  const [inviteRole, setInviteRole] = useState<
+    "EDITOR" | "COMMENTER" | "VIEWER"
+  >("VIEWER");
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
   const [selectedFriends, setSelectedFriends] = useState<SelectedFriend[]>([]);
-  
-  // Fetch invitations for this note
-  const { data: invitations = [], isLoading: invitationsLoading } = useQuery({
-    queryKey: ['note-invitations', note.id],
+
+  const { data: sharingData } = useQuery<SharingData>({
+    queryKey: ["note-sharing-info", note.id],
     queryFn: async () => {
-      const response = await fetch(`/api/invitations/note/${note.id}`, {
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to fetch invitations');
-      return response.json();
+      const response = await api.get(`/api/invitations/note/${note.id}/sharing-info`);
+      return response.data;
     },
     enabled: open,
   });
 
-  // Create single invitation mutation
+  const invitations = sharingData?.invitations || [];
+  const permissions = sharingData?.permissions || [];
+
   const createInvitation = useMutation({
-    mutationFn: async (data: { noteId: string; inviteeEmail: string; role: string }) => {
-      const response = await fetch('/api/invitations', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create invitation');
-      }
-      return response.json();
+    mutationFn: async (data: {
+      noteId: string;
+      inviteeEmail: string;
+      role: string;
+    }) => {
+      const response = await api.post("/api/invitations", data);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-invitations', note.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["note-sharing-info", note.id],
+      });
       setInviteEmail("");
-      setInviteRole('VIEWER');
+      setInviteRole("VIEWER");
       toast.success("Invitation sent successfully!");
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
     },
   });
 
   // Create bulk invitations mutation
   const createBulkInvitations = useMutation({
-    mutationFn: async (data: { noteId: string; invitations: { email: string; role: string }[] }) => {
-      const response = await fetch('/api/invitations/bulk', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Failed to create invitations');
-      }
-      return response.json();
+    mutationFn: async (data: {
+      noteId: string;
+      invitations: { email: string; role: string }[];
+    }) => {
+      const response = await api.post("/api/invitations/bulk", data);
+      return response.data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['note-invitations', note.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["note-sharing-info", note.id],
+      });
       setSelectedFriends([]);
       const count = data.success || selectedFriends.length;
-      toast.success(`${count} invitation${count > 1 ? 's' : ''} sent successfully!`);
+      toast.success(
+        `${count} invitation${count > 1 ? "s" : ""} sent successfully!`
+      );
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
     },
   });
 
-  // Cancel invitation mutation
   const cancelInvitation = useMutation({
     mutationFn: async (invitationId: string) => {
-      const response = await fetch(`/api/invitations/${invitationId}/cancel`, {
-        method: 'DELETE',
-        credentials: 'include',
-      });
-      if (!response.ok) throw new Error('Failed to cancel invitation');
-      return response.json();
+      const response = await api.delete(`/api/invitations/${invitationId}/cancel`);
+      return response.data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['note-invitations', note.id] });
+      queryClient.invalidateQueries({
+        queryKey: ["note-sharing-info", note.id],
+      });
       toast.success("Invitation cancelled");
     },
-    onError: (error) => {
-      toast.error(error.message);
+    onError: (error: any) => {
+      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
     },
   });
 
@@ -201,8 +221,7 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
   const handleInviteFriends = () => {
     if (selectedFriends.length === 0) return;
 
-    // Prepare bulk invitation data
-    const invitations = selectedFriends.map(friend => ({
+    const invitations = selectedFriends.map((friend) => ({
       email: friend.email,
       role: friend.role,
     }));
@@ -220,16 +239,16 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
       setCopiedToken(token);
       toast.success("Invitation link copied to clipboard!");
       setTimeout(() => setCopiedToken(null), 2000);
-    } catch (error) {
+    } catch {
       toast.error("Failed to copy link");
     }
   };
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
@@ -238,8 +257,12 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
     return roleLabels[role as keyof typeof roleLabels] || roleLabels.VIEWER;
   };
 
-  const pendingInvitations = invitations.filter((inv: Invitation) => inv.status === 'PENDING');
-  const acceptedInvitations = invitations.filter((inv: Invitation) => inv.status === 'ACCEPTED');
+  const pendingInvitations = invitations.filter(
+    (inv: Invitation) => inv.status === "PENDING"
+  );
+  const usersWithAccess = permissions.filter(
+    (perm: Permission) => perm.role !== "owner"
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -261,7 +284,7 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
               <Mail className="h-4 w-4" />
               <Label className="text-sm font-medium">Invite people</Label>
             </div>
-            
+
             <div className="space-y-4">
               {/* Friends selector */}
               <div className="space-y-3">
@@ -274,14 +297,18 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                 {selectedFriends.length > 0 && (
                   <Button
                     onClick={handleInviteFriends}
-                    disabled={selectedFriends.length === 0 || createBulkInvitations.isPending}
+                    disabled={
+                      selectedFriends.length === 0 ||
+                      createBulkInvitations.isPending
+                    }
                     className="w-full"
                   >
                     <Send className="h-4 w-4 mr-2" />
                     {createBulkInvitations.isPending
                       ? "Sending invitations..."
-                      : `Invite ${selectedFriends.length} friend${selectedFriends.length > 1 ? 's' : ''}`
-                    }
+                      : `Invite ${selectedFriends.length} friend${
+                          selectedFriends.length > 1 ? "s" : ""
+                        }`}
                   </Button>
                 )}
               </div>
@@ -290,7 +317,9 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
 
               {/* Email input */}
               <div className="space-y-2">
-                <Label className="text-sm text-muted-foreground">Or invite by email</Label>
+                <Label className="text-sm text-muted-foreground">
+                  Or invite by email
+                </Label>
                 <div className="flex gap-2">
                   <div className="flex-1">
                     <Input
@@ -299,14 +328,19 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                       value={inviteEmail}
                       onChange={(e) => setInviteEmail(e.target.value)}
                       onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
+                        if (e.key === "Enter") {
                           e.preventDefault();
                           handleInviteUser();
                         }
                       }}
                     />
                   </div>
-                  <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
+                  <Select
+                    value={inviteRole}
+                    onValueChange={(value: "EDITOR" | "COMMENTER" | "VIEWER") =>
+                      setInviteRole(value)
+                    }
+                  >
                     <SelectTrigger className="w-32">
                       <SelectValue />
                     </SelectTrigger>
@@ -343,38 +377,49 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                 <div className="flex items-center gap-3">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={note.owner.image} />
-                    <AvatarFallback>{getInitials(note.owner.name)}</AvatarFallback>
+                    <AvatarFallback>
+                      {getInitials(note.owner.name)}
+                    </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium">{note.owner.name}</p>
-                    <p className="text-xs text-muted-foreground">{note.owner.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {note.owner.email}
+                    </p>
                   </div>
                 </div>
-                <Badge className={getRoleInfo('OWNER').color}>
+                <Badge className={getRoleInfo("OWNER").color}>
                   <Crown className="h-3 w-3 mr-1" />
                   Owner
                 </Badge>
               </div>
 
-              {/* Accepted collaborators */}
-              {acceptedInvitations.map((invitation: Invitation) => {
-                const roleInfo = getRoleInfo(invitation.role);
+              {/* Users with actual permissions */}
+              {usersWithAccess.map((permission: Permission) => {
+                const roleInfo = getRoleInfo(permission.role.toUpperCase());
                 const IconComponent = roleInfo.icon;
-                
+
                 return (
-                  <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div
+                    key={permission.id}
+                    className="flex items-center justify-between p-3 border rounded-lg"
+                  >
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={invitation.invitee?.image} />
+                        <AvatarImage src={permission.user?.image} />
                         <AvatarFallback>
-                          {invitation.invitee?.name ? getInitials(invitation.invitee.name) : '?'}
+                          {permission.user?.name
+                            ? getInitials(permission.user.name)
+                            : "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <p className="text-sm font-medium">
-                          {invitation.invitee?.name || invitation.inviteeEmail}
+                          {permission.user?.name || "Unknown User"}
                         </p>
-                        <p className="text-xs text-muted-foreground">{invitation.inviteeEmail}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {permission.user?.email}
+                        </p>
                       </div>
                     </div>
                     <Badge className={roleInfo.color}>
@@ -394,7 +439,9 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  <Label className="text-sm font-medium">Pending invitations</Label>
+                  <Label className="text-sm font-medium">
+                    Pending invitations
+                  </Label>
                 </div>
 
                 <Table>
@@ -411,10 +458,12 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                     {pendingInvitations.map((invitation: Invitation) => {
                       const roleInfo = getRoleInfo(invitation.role);
                       const IconComponent = roleInfo.icon;
-                      
+
                       return (
                         <TableRow key={invitation.id}>
-                          <TableCell className="font-medium">{invitation.inviteeEmail}</TableCell>
+                          <TableCell className="font-medium">
+                            {invitation.inviteeEmail}
+                          </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="gap-1">
                               <IconComponent className="h-3 w-3" />
@@ -422,17 +471,24 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                             </Badge>
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(invitation.createdAt), { addSuffix: true })}
+                            {formatDistanceToNow(
+                              new Date(invitation.createdAt),
+                              { addSuffix: true }
+                            )}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground">
-                            {formatDistanceToNow(new Date(invitation.expiresAt))}
+                            {formatDistanceToNow(
+                              new Date(invitation.expiresAt)
+                            )}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex items-center justify-end gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleCopyInviteLink(invitation.token)}
+                                onClick={() =>
+                                  handleCopyInviteLink(invitation.token)
+                                }
                               >
                                 {copiedToken === invitation.token ? (
                                   <Check className="h-4 w-4" />
@@ -448,16 +504,23 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
                                 </AlertDialogTrigger>
                                 <AlertDialogContent>
                                   <AlertDialogHeader>
-                                    <AlertDialogTitle>Cancel invitation?</AlertDialogTitle>
+                                    <AlertDialogTitle>
+                                      Cancel invitation?
+                                    </AlertDialogTitle>
                                     <AlertDialogDescription>
-                                      This will cancel the invitation to {invitation.inviteeEmail}. 
-                                      They will no longer be able to accept this invitation.
+                                      This will cancel the invitation to{" "}
+                                      {invitation.inviteeEmail}. They will no
+                                      longer be able to accept this invitation.
                                     </AlertDialogDescription>
                                   </AlertDialogHeader>
                                   <AlertDialogFooter>
-                                    <AlertDialogCancel>Keep invitation</AlertDialogCancel>
+                                    <AlertDialogCancel>
+                                      Keep invitation
+                                    </AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => cancelInvitation.mutate(invitation.id)}
+                                      onClick={() =>
+                                        cancelInvitation.mutate(invitation.id)
+                                      }
                                       disabled={cancelInvitation.isPending}
                                     >
                                       Cancel invitation
