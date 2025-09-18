@@ -95,7 +95,7 @@ const Layout = () => {
                       className="md:hidden mr-3"
                       aria-label="Toggle navigation menu"
                     >
-                      <Menu className="size-6" />
+                      <Menu className="size-5" />
                     </Button>
                   </SheetTrigger>
                   <SheetContent side="left" className="w-80 p-0">
@@ -116,7 +116,7 @@ const Layout = () => {
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
-                                <Home className="h-5 w-5 mr-3" />
+                                <Home className="size-5 mr-3" />
                                 Home
                               </div>
                             </div>
@@ -129,7 +129,7 @@ const Layout = () => {
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
-                                <FileText className="h-5 w-5 mr-3" />
+                                <FileText className="size-5 mr-3" />
                                 Notes
                               </div>
                             </div>
@@ -142,7 +142,7 @@ const Layout = () => {
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
-                                <Users className="h-5 w-5 mr-3" />
+                                <Users className="size-5 mr-3" />
                                 Friends
                               </div>
                               {!!counts?.friends && (
@@ -167,7 +167,7 @@ const Layout = () => {
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
-                                <Mail className="h-5 w-5 mr-3" />
+                                <Mail className="size-5 mr-3" />
                                 Invitations
                               </div>
                               {!!counts?.invitations && (
@@ -190,7 +190,7 @@ const Layout = () => {
                           >
                             <div className="flex items-center justify-between w-full">
                               <div className="flex items-center">
-                                <MessageSquare className="h-5 w-5 mr-3" />
+                                <MessageSquare className="size-5 mr-3" />
                                 Messages
                               </div>
                               {!!counts?.messages && (
@@ -212,9 +212,9 @@ const Layout = () => {
                         <div className="flex items-center justify-between h-12 px-3">
                           <div className="flex items-center">
                             {resolvedTheme === "dark" ? (
-                              <Moon className="h-5 w-5 mr-3" />
+                              <Moon className="size-5 mr-3" />
                             ) : (
-                              <Sun className="h-5 w-5 mr-3" />
+                              <Sun className="size-5 mr-3" />
                             )}
                             <span className="text-sm font-medium">
                               Dark mode
@@ -234,14 +234,14 @@ const Layout = () => {
                           className="w-full justify-start h-12"
                           onClick={() => navigateAndCloseMobile("/settings")}
                         >
-                          <Settings className="h-5 w-5 mr-3" />
+                          <Settings className="size-5 mr-1" />
                           Settings
                         </Button>
 
                         {/* User Info with Sign Out */}
                         <div className="flex items-center justify-between h-12 px-3">
                           <div className="flex items-center min-w-0 flex-1">
-                            <User className="h-5 w-5 mr-3 flex-shrink-0" />
+                            <User className="size-5 mr-3 flex-shrink-0" />
                             <span className="text-sm text-muted-foreground truncate">
                               {session.user.name}
                             </span>
@@ -252,7 +252,7 @@ const Layout = () => {
                             onClick={handleSignOut}
                             className="ml-2 h-8 w-8 p-0 flex-shrink-0"
                           >
-                            <LogOut className="h-4 w-4" />
+                            <LogOut className="size-5" />
                           </Button>
                         </div>
                       </div>
