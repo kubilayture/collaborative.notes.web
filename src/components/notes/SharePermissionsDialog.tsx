@@ -137,7 +137,9 @@ export function SharePermissionsDialog({
   const { data: sharingData } = useQuery<SharingData>({
     queryKey: ["note-sharing-info", note.id],
     queryFn: async () => {
-      const response = await api.get(`/api/invitations/note/${note.id}/sharing-info`);
+      const response = await api.get(
+        `/invitations/note/${note.id}/sharing-info`
+      );
       return response.data;
     },
     enabled: open,
@@ -152,7 +154,7 @@ export function SharePermissionsDialog({
       inviteeEmail: string;
       role: string;
     }) => {
-      const response = await api.post("/api/invitations", data);
+      const response = await api.post("/invitations", data);
       return response.data;
     },
     onSuccess: () => {
@@ -164,7 +166,11 @@ export function SharePermissionsDialog({
       toast.success("Invitation sent successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to perform operation"
+      );
     },
   });
 
@@ -174,7 +180,7 @@ export function SharePermissionsDialog({
       noteId: string;
       invitations: { email: string; role: string }[];
     }) => {
-      const response = await api.post("/api/invitations/bulk", data);
+      const response = await api.post("/invitations/bulk", data);
       return response.data;
     },
     onSuccess: (data) => {
@@ -188,13 +194,17 @@ export function SharePermissionsDialog({
       );
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to perform operation"
+      );
     },
   });
 
   const cancelInvitation = useMutation({
     mutationFn: async (invitationId: string) => {
-      const response = await api.delete(`/api/invitations/${invitationId}/cancel`);
+      const response = await api.delete(`/invitations/${invitationId}/cancel`);
       return response.data;
     },
     onSuccess: () => {
@@ -204,7 +214,11 @@ export function SharePermissionsDialog({
       toast.success("Invitation cancelled");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || "Failed to perform operation");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to perform operation"
+      );
     },
   });
 

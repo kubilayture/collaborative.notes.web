@@ -79,7 +79,7 @@ export function InvitationsPage() {
   } = useQuery({
     queryKey: ["my-invitations"],
     queryFn: async (): Promise<Invitation[]> => {
-      const response = await api.get("/api/invitations");
+      const response = await api.get("/invitations");
       return response.data;
     },
   });
@@ -87,7 +87,7 @@ export function InvitationsPage() {
   // Accept invitation mutation
   const acceptInvitation = useMutation({
     mutationFn: async (token: string) => {
-      const response = await api.post(`/api/invitations/${token}/accept`);
+      const response = await api.post(`/invitations/${token}/accept`);
       return response.data;
     },
     onSuccess: () => {
@@ -95,14 +95,18 @@ export function InvitationsPage() {
       toast.success("Invitation accepted successfully!");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || "Failed to accept invitation");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to accept invitation"
+      );
     },
   });
 
   // Decline invitation mutation
   const declineInvitation = useMutation({
     mutationFn: async (token: string) => {
-      const response = await api.post(`/api/invitations/${token}/decline`);
+      const response = await api.post(`/invitations/${token}/decline`);
       return response.data;
     },
     onSuccess: () => {
@@ -110,7 +114,11 @@ export function InvitationsPage() {
       toast.success("Invitation declined");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || "Failed to decline invitation");
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to decline invitation"
+      );
     },
   });
 

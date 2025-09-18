@@ -4,21 +4,31 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { useSession } from "../../lib/auth-client";
 import { api } from "../../lib/api";
 import { Button } from "../../components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../../components/ui/avatar";
+import {
+  Avatar,
+  AvatarImage,
+  AvatarFallback,
+} from "../../components/ui/avatar";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
-import { 
-  FileText, 
-  Users, 
-  Crown, 
-  Edit3, 
-  MessageSquare, 
+import {
+  FileText,
+  Users,
+  Crown,
+  Edit3,
+  MessageSquare,
   Eye,
   CheckCircle,
   XCircle,
-  Clock
+  Clock,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
@@ -42,68 +52,97 @@ interface Invitation {
   note: Note;
   inviter: User;
   inviteeEmail: string;
-  role: 'OWNER' | 'EDITOR' | 'COMMENTER' | 'VIEWER';
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'EXPIRED';
+  role: "OWNER" | "EDITOR" | "COMMENTER" | "VIEWER";
+  status: "PENDING" | "ACCEPTED" | "DECLINED" | "EXPIRED";
   expiresAt: string;
   createdAt: string;
 }
 
 const roleInfo = {
-  OWNER: { label: "Owner", icon: Crown, color: "bg-yellow-100 text-yellow-800", description: "Full control over the note" },
-  EDITOR: { label: "Editor", icon: Edit3, color: "bg-blue-100 text-blue-800", description: "Can edit and collaborate" },
-  COMMENTER: { label: "Commenter", icon: MessageSquare, color: "bg-green-100 text-green-800", description: "Can add comments and suggestions" },
-  VIEWER: { label: "Viewer", icon: Eye, color: "bg-gray-100 text-gray-800", description: "Can view and read only" },
+  OWNER: {
+    label: "Owner",
+    icon: Crown,
+    color: "bg-yellow-100 text-yellow-800",
+    description: "Full control over the note",
+  },
+  EDITOR: {
+    label: "Editor",
+    icon: Edit3,
+    color: "bg-blue-100 text-blue-800",
+    description: "Can edit and collaborate",
+  },
+  COMMENTER: {
+    label: "Commenter",
+    icon: MessageSquare,
+    color: "bg-green-100 text-green-800",
+    description: "Can add comments and suggestions",
+  },
+  VIEWER: {
+    label: "Viewer",
+    icon: Eye,
+    color: "bg-gray-100 text-gray-800",
+    description: "Can view and read only",
+  },
 };
 
 export function AcceptInvitationPage() {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
   const { data: session, isPending: sessionLoading } = useSession();
-  
+
   const [isAccepting, setIsAccepting] = useState(false);
   const [isDeclining, setIsDeclining] = useState(false);
 
-  // Fetch invitation details
-  const { data: invitation, isLoading, error, refetch } = useQuery({
-    queryKey: ['invitation', token],
+  const {
+    data: invitation,
+    isLoading,
+    error,
+    refetch,
+  } = useQuery<Invitation>({
+    queryKey: ["invitation", token],
     queryFn: async () => {
-      const response = await api.get(`/api/invitations/token/${token}`);
+      const response = await api.get(`/invitations/token/${token}`);
       return response.data;
     },
     enabled: !!token,
   });
 
-  // Accept invitation mutation
   const acceptInvitation = useMutation({
     mutationFn: async () => {
-      const response = await api.patch(`/api/invitations/${token}/accept`);
+      const response = await api.patch(`/invitations/${token}/accept`);
       return response.data;
     },
     onSuccess: (data) => {
       toast.success(data.message);
       setIsAccepting(false);
-      // Redirect to the note
-      navigate(`/notes/${invitation.note.id}`);
+      navigate(`/notes/${invitation?.note.id}`);
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Failed to accept invitation');
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to accept invitation"
+      );
       setIsAccepting(false);
     },
   });
 
-  // Decline invitation mutation
   const declineInvitation = useMutation({
     mutationFn: async () => {
-      const response = await api.patch(`/api/invitations/${token}/decline`);
+      const response = await api.patch(`/invitations/${token}/decline`);
       return response.data;
     },
     onSuccess: (data) => {
       toast.success(data.message);
       setIsDeclining(false);
-      navigate('/notes');
+      navigate("/notes");
     },
     onError: (error: any) => {
-      toast.error(error.response?.data?.message || error.message || 'Failed to decline invitation');
+      toast.error(
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to decline invitation"
+      );
       setIsDeclining(false);
     },
   });
@@ -120,15 +159,15 @@ export function AcceptInvitationPage() {
 
   const getInitials = (name: string) => {
     return name
-      .split(' ')
-      .map(n => n[0])
-      .join('')
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
       .toUpperCase()
       .slice(0, 2);
   };
 
   if (sessionLoading || isLoading) return <Loading />;
-  
+
   if (!session) {
     return (
       <div className="container mx-auto p-6 max-w-2xl">
@@ -140,9 +179,7 @@ export function AcceptInvitationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/auth/signin')}>
-              Sign In
-            </Button>
+            <Button onClick={() => navigate("/auth/signin")}>Sign In</Button>
           </CardContent>
         </Card>
       </div>
@@ -152,9 +189,9 @@ export function AcceptInvitationPage() {
   if (error) {
     return (
       <div className="container mx-auto p-6 max-w-2xl">
-        <Error 
-          message={error.message || "Failed to load invitation"} 
-          onRetry={refetch} 
+        <Error
+          message={error.message || "Failed to load invitation"}
+          onRetry={refetch}
         />
       </div>
     );
@@ -171,31 +208,40 @@ export function AcceptInvitationPage() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <Button onClick={() => navigate('/notes')}>
-              Go to Notes
-            </Button>
+            <Button onClick={() => navigate("/notes")}>Go to Notes</Button>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // Check if invitation has expired
   const isExpired = new Date(invitation.expiresAt) < new Date();
-  const currentRole = roleInfo[invitation.role];
+  const currentRole = roleInfo[invitation.role as keyof typeof roleInfo];
   const IconComponent = currentRole.icon;
 
-  // Handle already processed invitations
-  if (invitation.status !== 'PENDING') {
+  if (invitation.status !== "PENDING") {
     const statusConfig = {
-      ACCEPTED: { icon: CheckCircle, color: 'text-green-600', message: 'You have already accepted this invitation.' },
-      DECLINED: { icon: XCircle, color: 'text-red-600', message: 'You have declined this invitation.' },
-      EXPIRED: { icon: Clock, color: 'text-gray-600', message: 'This invitation has expired.' },
+      ACCEPTED: {
+        icon: CheckCircle,
+        color: "text-green-600",
+        message: "You have already accepted this invitation.",
+      },
+      DECLINED: {
+        icon: XCircle,
+        color: "text-red-600",
+        message: "You have declined this invitation.",
+      },
+      EXPIRED: {
+        icon: Clock,
+        color: "text-gray-600",
+        message: "This invitation has expired.",
+      },
     };
-    
-    const config = statusConfig[invitation.status];
+
+    const config =
+      statusConfig[invitation.status as "ACCEPTED" | "DECLINED" | "EXPIRED"];
     const StatusIcon = config.icon;
-    
+
     return (
       <div className="container mx-auto p-6 max-w-2xl">
         <Card>
@@ -204,19 +250,15 @@ export function AcceptInvitationPage() {
               <StatusIcon className={`h-5 w-5 ${config.color}`} />
               Invitation {invitation.status.toLowerCase()}
             </CardTitle>
-            <CardDescription>
-              {config.message}
-            </CardDescription>
+            <CardDescription>{config.message}</CardDescription>
           </CardHeader>
           <CardContent>
-            {invitation.status === 'ACCEPTED' ? (
+            {invitation.status === "ACCEPTED" ? (
               <Button onClick={() => navigate(`/notes/${invitation.note.id}`)}>
                 Go to Note
               </Button>
             ) : (
-              <Button onClick={() => navigate('/notes')}>
-                Go to Notes
-              </Button>
+              <Button onClick={() => navigate("/notes")}>Go to Notes</Button>
             )}
           </CardContent>
         </Card>
@@ -224,7 +266,6 @@ export function AcceptInvitationPage() {
     );
   }
 
-  // Check if user's email matches invitation
   if (session.user?.email !== invitation.inviteeEmail) {
     return (
       <div className="container mx-auto p-6 max-w-2xl">
@@ -232,15 +273,17 @@ export function AcceptInvitationPage() {
           <CardHeader>
             <CardTitle>Wrong account</CardTitle>
             <CardDescription>
-              This invitation is for {invitation.inviteeEmail}, but you're signed in as {session.user?.email}.
+              This invitation is for {invitation.inviteeEmail}, but you're
+              signed in as {session.user?.email}.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Please sign in with the correct account or ask the sender to send a new invitation.
+                Please sign in with the correct account or ask the sender to
+                send a new invitation.
               </p>
-              <Button onClick={() => navigate('/auth/signin')}>
+              <Button onClick={() => navigate("/auth/signin")}>
                 Sign in with different account
               </Button>
             </div>
@@ -260,17 +303,20 @@ export function AcceptInvitationPage() {
               Invitation expired
             </CardTitle>
             <CardDescription>
-              This invitation expired {formatDistanceToNow(new Date(invitation.expiresAt), { addSuffix: true })}.
+              This invitation expired{" "}
+              {formatDistanceToNow(new Date(invitation.expiresAt), {
+                addSuffix: true,
+              })}
+              .
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Please ask {invitation.inviter.name} to send you a new invitation.
+                Please ask {invitation.inviter.name} to send you a new
+                invitation.
               </p>
-              <Button onClick={() => navigate('/notes')}>
-                Go to Notes
-              </Button>
+              <Button onClick={() => navigate("/notes")}>Go to Notes</Button>
             </div>
           </CardContent>
         </Card>
@@ -290,17 +336,21 @@ export function AcceptInvitationPage() {
             {invitation.inviter.name} has invited you to collaborate on a note.
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           {/* Inviter info */}
           <div className="flex items-center gap-3">
             <Avatar className="h-12 w-12">
               <AvatarImage src={invitation.inviter.image} />
-              <AvatarFallback>{getInitials(invitation.inviter.name)}</AvatarFallback>
+              <AvatarFallback>
+                {getInitials(invitation.inviter.name)}
+              </AvatarFallback>
             </Avatar>
             <div>
               <p className="font-medium">{invitation.inviter.name}</p>
-              <p className="text-sm text-muted-foreground">{invitation.inviter.email}</p>
+              <p className="text-sm text-muted-foreground">
+                {invitation.inviter.email}
+              </p>
             </div>
           </div>
 
@@ -335,20 +385,23 @@ export function AcceptInvitationPage() {
           <div className="text-sm text-muted-foreground">
             <div className="flex items-center gap-1">
               <Clock className="h-4 w-4" />
-              This invitation expires {formatDistanceToNow(new Date(invitation.expiresAt), { addSuffix: true })}
+              This invitation expires{" "}
+              {formatDistanceToNow(new Date(invitation.expiresAt), {
+                addSuffix: true,
+              })}
             </div>
           </div>
 
           {/* Action buttons */}
           <div className="flex gap-3 pt-4">
-            <Button 
+            <Button
               onClick={handleAccept}
               disabled={isAccepting || isDeclining}
               className="flex-1"
             >
               {isAccepting ? "Accepting..." : "Accept invitation"}
             </Button>
-            <Button 
+            <Button
               variant="outline"
               onClick={handleDecline}
               disabled={isAccepting || isDeclining}
