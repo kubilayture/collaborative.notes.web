@@ -7,9 +7,7 @@ import {
   CardTitle,
 } from "../components/ui/card";
 import { useNavigate } from "react-router";
-import { useLogout } from "../hooks/auth.hook";
 import {
-  LogOut,
   ArrowRight,
   Users,
   FileText,
@@ -104,15 +102,6 @@ const features = [
 export function HomePage() {
   const { data: session } = useSession();
   const navigate = useNavigate();
-  const logout = useLogout();
-
-  const handleLogout = () => {
-    logout.mutate(undefined, {
-      onSuccess: () => {
-        navigate("/login");
-      },
-    });
-  };
 
   if (!session?.user) {
     return (
@@ -419,24 +408,13 @@ export function HomePage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="mb-6 flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold">
-            Welcome back, {session.user.name}!
-          </h1>
-          <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-            Ready to collaborate on your notes?
-          </p>
-        </div>
-        <Button
-          onClick={handleLogout}
-          variant="outline"
-          title="Log Out"
-          className="flex-shrink-0"
-        >
-          <LogOut className="h-4 w-4" />
-          <span className="hidden sm:inline sm:ml-2">Log Out</span>
-        </Button>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold">
+          Welcome back, {session.user.name}!
+        </h1>
+        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
+          Ready to collaborate on your notes?
+        </p>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
