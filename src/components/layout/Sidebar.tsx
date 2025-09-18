@@ -87,7 +87,7 @@ export function Sidebar({ collapsed = false }: SidebarProps) {
   return (
     <div className={`h-full bg-card border-r border-border flex flex-col ${collapsed ? 'w-16' : 'w-64'} transition-all duration-300`}>
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="h-14 px-4 border-b border-border flex items-center">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
             <FileText className="h-5 w-5 text-primary-foreground" />
