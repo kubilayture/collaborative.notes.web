@@ -56,6 +56,7 @@ import {
   Send
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { FriendsSelector, type SelectedFriend } from "../friends/FriendsSelector";
 
 interface User {
   id: string;
@@ -101,6 +102,7 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<'EDITOR' | 'COMMENTER' | 'VIEWER'>('VIEWER');
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [selectedFriends, setSelectedFriends] = useState<SelectedFriend[]>([]);
   
   // Fetch invitations for this note
   const { data: invitations = [], isLoading: invitationsLoading } = useQuery({
@@ -115,7 +117,7 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
     enabled: open,
   });
 
-  // Create invitation mutation
+  // Create single invitation mutation
   const createInvitation = useMutation({
     mutationFn: async (data: { noteId: string; inviteeEmail: string; role: string }) => {
       const response = await fetch('/api/invitations', {
@@ -135,6 +137,32 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
       setInviteEmail("");
       setInviteRole('VIEWER');
       toast.success("Invitation sent successfully!");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+    },
+  });
+
+  // Create bulk invitations mutation
+  const createBulkInvitations = useMutation({
+    mutationFn: async (data: { noteId: string; invitations: { email: string; role: string }[] }) => {
+      const response = await fetch('/api/invitations/bulk', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(data),
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create invitations');
+      }
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['note-invitations', note.id] });
+      setSelectedFriends([]);
+      const count = data.success || selectedFriends.length;
+      toast.success(`${count} invitation${count > 1 ? 's' : ''} sent successfully!`);
     },
     onError: (error) => {
       toast.error(error.message);
@@ -162,11 +190,26 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
 
   const handleInviteUser = () => {
     if (!inviteEmail.trim()) return;
-    
+
     createInvitation.mutate({
       noteId: note.id,
       inviteeEmail: inviteEmail.trim(),
       role: inviteRole,
+    });
+  };
+
+  const handleInviteFriends = () => {
+    if (selectedFriends.length === 0) return;
+
+    // Prepare bulk invitation data
+    const invitations = selectedFriends.map(friend => ({
+      email: friend.email,
+      role: friend.role,
+    }));
+
+    createBulkInvitations.mutate({
+      noteId: note.id,
+      invitations,
     });
   };
 
@@ -219,38 +262,69 @@ export function SharePermissionsDialog({ note, open, onOpenChange }: SharePermis
               <Label className="text-sm font-medium">Invite people</Label>
             </div>
             
-            <div className="flex gap-2">
-              <div className="flex-1">
-                <Input
-                  placeholder="Enter email address"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      handleInviteUser();
-                    }
-                  }}
+            <div className="space-y-4">
+              {/* Friends selector */}
+              <div className="space-y-3">
+                <FriendsSelector
+                  selectedFriends={selectedFriends}
+                  onSelectionChange={setSelectedFriends}
+                  placeholder="Select friends to invite..."
                 />
+
+                {selectedFriends.length > 0 && (
+                  <Button
+                    onClick={handleInviteFriends}
+                    disabled={selectedFriends.length === 0 || createBulkInvitations.isPending}
+                    className="w-full"
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {createBulkInvitations.isPending
+                      ? "Sending invitations..."
+                      : `Invite ${selectedFriends.length} friend${selectedFriends.length > 1 ? 's' : ''}`
+                    }
+                  </Button>
+                )}
               </div>
-              <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
-                <SelectTrigger className="w-32">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="VIEWER">Viewer</SelectItem>
-                  <SelectItem value="COMMENTER">Commenter</SelectItem>
-                  <SelectItem value="EDITOR">Editor</SelectItem>
-                </SelectContent>
-              </Select>
-              <Button 
-                onClick={handleInviteUser}
-                disabled={!inviteEmail.trim() || createInvitation.isPending}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                Invite
-              </Button>
+
+              <Separator />
+
+              {/* Email input */}
+              <div className="space-y-2">
+                <Label className="text-sm text-muted-foreground">Or invite by email</Label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <Input
+                      placeholder="Enter email address"
+                      type="email"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleInviteUser();
+                        }
+                      }}
+                    />
+                  </div>
+                  <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
+                    <SelectTrigger className="w-32">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="VIEWER">Viewer</SelectItem>
+                      <SelectItem value="COMMENTER">Commenter</SelectItem>
+                      <SelectItem value="EDITOR">Editor</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    onClick={handleInviteUser}
+                    disabled={!inviteEmail.trim() || createInvitation.isPending}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    Invite
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
 
