@@ -3,11 +3,12 @@ import { ThemeToggle } from "../common/ThemeToggle";
 import { useSession, signOut } from "../../lib/auth-client";
 import { Button } from "../ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "../ui/dropdown-menu";
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "../ui/sheet";
 import {
   FileText,
   Users,
@@ -31,7 +32,6 @@ const Layout = () => {
   const { data: counts } = useNotificationCounts();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Enable notification toasts
   useNotificationToasts();
 
   const handleSignOut = async () => {
@@ -153,127 +153,155 @@ const Layout = () => {
                 </div>
               )}
 
-              {/* Mobile Menu Button */}
+              {/* Mobile Menu Sheet */}
               {session && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="md:hidden h-input w-input p-0"
-                  onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                  aria-label="Toggle navigation menu"
+                <Sheet
+                  open={isMobileMenuOpen}
+                  onOpenChange={setIsMobileMenuOpen}
                 >
-                  {isMobileMenuOpen ? (
-                    <X className="h-6 w-6" />
-                  ) : (
-                    <Menu className="h-6 w-6" />
-                  )}
-                </Button>
+                  <SheetTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="md:hidden h-input w-input p-0"
+                      aria-label="Toggle navigation menu"
+                    >
+                      <Menu className="h-6 w-6" />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side="left" className="w-80 p-0">
+                    <div className="flex flex-col h-full">
+                      <SheetHeader className="p-6 border-b">
+                        <SheetTitle className="text-left">
+                          Collaborative Notes
+                        </SheetTitle>
+                      </SheetHeader>
+
+                      <div className="flex-1 overflow-y-auto">
+                        <div className="px-4 py-6 space-y-2">
+                          {/* Navigation Items */}
+                          <Button
+                            variant={isActive("/") ? "default" : "ghost"}
+                            className="w-full justify-start h-12"
+                            onClick={() => navigateAndCloseMobile("/")}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <Home className="h-5 w-5 mr-3" />
+                                Home
+                              </div>
+                            </div>
+                          </Button>
+
+                          <Button
+                            variant={isActive("/notes") ? "default" : "ghost"}
+                            className="w-full justify-start h-12"
+                            onClick={() => navigateAndCloseMobile("/notes")}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <FileText className="h-5 w-5 mr-3" />
+                                Notes
+                              </div>
+                            </div>
+                          </Button>
+
+                          <Button
+                            variant={isActive("/friends") ? "default" : "ghost"}
+                            className="w-full justify-start h-12"
+                            onClick={() => navigateAndCloseMobile("/friends")}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <Users className="h-5 w-5 mr-3" />
+                                Friends
+                              </div>
+                              {!!counts?.friends && (
+                                <Badge
+                                  variant="destructive"
+                                  className="h-5 min-w-[20px] px-1"
+                                >
+                                  {counts.friends}
+                                </Badge>
+                              )}
+                            </div>
+                          </Button>
+
+                          <Button
+                            variant={
+                              isActive("/invitations") ? "default" : "ghost"
+                            }
+                            className="w-full justify-start h-12"
+                            onClick={() =>
+                              navigateAndCloseMobile("/invitations")
+                            }
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <Mail className="h-5 w-5 mr-3" />
+                                Invitations
+                              </div>
+                              {!!counts?.invitations && (
+                                <Badge
+                                  variant="destructive"
+                                  className="h-5 min-w-[20px] px-1"
+                                >
+                                  {counts.invitations}
+                                </Badge>
+                              )}
+                            </div>
+                          </Button>
+
+                          <Button
+                            variant={
+                              isActive("/messaging") ? "default" : "ghost"
+                            }
+                            className="w-full justify-start h-12"
+                            onClick={() => navigateAndCloseMobile("/messaging")}
+                          >
+                            <div className="flex items-center justify-between w-full">
+                              <div className="flex items-center">
+                                <MessageSquare className="h-5 w-5 mr-3" />
+                                Messages
+                              </div>
+                              {!!counts?.messages && (
+                                <Badge
+                                  variant="destructive"
+                                  className="h-5 min-w-[20px] px-1"
+                                >
+                                  {counts.messages}
+                                </Badge>
+                              )}
+                            </div>
+                          </Button>
+                        </div>
+                      </div>
+
+                      {/* User Info & Sign Out */}
+                      <div className="border-t p-4">
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center">
+                            <User className="h-5 w-5 mr-3" />
+                            <span className="text-sm text-muted-foreground">
+                              {session.user.name}
+                            </span>
+                          </div>
+                        </div>
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start h-10"
+                          onClick={handleSignOut}
+                        >
+                          <LogOut className="h-4 w-4 mr-3" />
+                          Sign Out
+                        </Button>
+                      </div>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               )}
             </div>
           </div>
-
-          {/* Mobile Navigation Menu */}
-          {session && isMobileMenuOpen && (
-            <div className="md:hidden border-t border-border">
-              <div className="px-2 pt-2 pb-3 space-y-1">
-                {/* Navigation Items */}
-                <Button
-                  variant={isActive("/") ? "default" : "ghost"}
-                  className="w-full justify-start h-input"
-                  onClick={() => navigateAndCloseMobile("/")}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <Home className="h-5 w-5 mr-3" />
-                      Home
-                    </div>
-                  </div>
-                </Button>
-                <Button
-                  variant={isActive("/notes") ? "default" : "ghost"}
-                  className="w-full justify-start h-input"
-                  onClick={() => navigateAndCloseMobile("/notes")}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <FileText className="h-5 w-5 mr-3" />
-                      Notes
-                    </div>
-                  </div>
-                </Button>
-                <Button
-                  variant={isActive("/friends") ? "default" : "ghost"}
-                  className="w-full justify-start h-input"
-                  onClick={() => navigateAndCloseMobile("/friends")}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <Users className="h-5 w-5 mr-3" />
-                      Friends
-                    </div>
-                    {!!counts?.friends && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] px-1"
-                      >
-                        {counts.friends}
-                      </Badge>
-                    )}
-                  </div>
-                </Button>
-                <Button
-                  variant={isActive("/invitations") ? "default" : "ghost"}
-                  className="w-full justify-start h-input"
-                  onClick={() => navigateAndCloseMobile("/invitations")}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <Mail className="h-5 w-5 mr-3" />
-                      Invitations
-                    </div>
-                    {!!counts?.invitations && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] px-1"
-                      >
-                        {counts.invitations}
-                      </Badge>
-                    )}
-                  </div>
-                </Button>
-                <Button
-                  variant={isActive("/messaging") ? "default" : "ghost"}
-                  className="w-full justify-start h-input"
-                  onClick={() => navigateAndCloseMobile("/messaging")}
-                >
-                  <div className="flex items-center justify-between w-full">
-                    <div className="flex items-center">
-                      <MessageSquare className="h-5 w-5 mr-3" />
-                      Messages
-                    </div>
-                    {!!counts?.messages && (
-                      <Badge
-                        variant="destructive"
-                        className="h-5 min-w-[20px] px-1"
-                      >
-                        {counts.messages}
-                      </Badge>
-                    )}
-                  </div>
-                </Button>
-
-                {/* User Info Only */}
-                <div className="border-t border-border pt-2 mt-2">
-                  <div className="flex items-center px-3 py-2">
-                    <User className="h-5 w-5 mr-3" />
-                    <span className="text-sm text-muted-foreground">
-                      {session.user.name}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Mobile Login Button */}
           {!session && (
