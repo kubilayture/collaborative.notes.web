@@ -7,13 +7,11 @@ import {
   type Note,
   contentToPlainText,
 } from "../../hooks/notes.hook";
-import { useFolders, useDeleteFolder } from "../../hooks/folders.hook";
+import { useFolders, useDeleteFolder, type Folder } from "../../hooks/folders.hook";
 import { Button } from "../../components/ui/button";
 import {
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
 } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import {
@@ -33,7 +31,6 @@ import {
   useOutletContext,
   useSearchParams,
 } from "react-router";
-import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
 import {
   NotesListSkeleton,
@@ -47,11 +44,10 @@ import {
   Share2,
   FolderOpen,
   FolderPlus,
-  Folder,
+  Folder as FolderIcon,
   FileText,
 } from "lucide-react";
 import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
-import { NoteListItem } from "../../components/notes/NoteListItem";
 import { NotesListView } from "../../components/notes/NotesListView";
 import { formatDistanceToNow } from "date-fns";
 
@@ -271,72 +267,83 @@ export function NotesListPage() {
         ) : (
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {/* Render Folders */}
-            {filteredFolders.map((folder) => (
-              <Card
-                key={folder.id}
-                className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-2 hover:border-primary/20 bg-gradient-to-br from-card to-card/80"
-                onClick={() => navigate(`/notes/folder/${folder.id}`)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start gap-3">
-                        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500/20 to-blue-600/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                          <Folder className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <CardTitle className="text-sm font-semibold truncate mb-2">
-                            {folder.name}
-                          </CardTitle>
+            {filteredFolders.map((folder) => {
+              // Use folder color or fallback to blue
+              const folderColor = folder.color || '#3B82F6';
 
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                              <span className="flex items-center">
-                                <FileText className="h-3 w-3 mr-1" />
-                                {folder.noteCount || 0}
-                              </span>
-                              <span className="flex items-center">
-                                <Folder className="h-3 w-3 mr-1" />
-                                {folder.subfolderCount || 0}
-                              </span>
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              Folder
-                            </div>
-                          </div>
+              return (
+                <Card
+                  key={folder.id}
+                  className="group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
+                  onClick={() => navigate(`/notes/folder/${folder.id}`)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div
+                        className="w-12 h-12 rounded-2xl flex items-center justify-center shadow-sm"
+                        style={{ backgroundColor: folderColor }}
+                      >
+                        <FolderIcon className="h-6 w-6 text-white" />
+                      </div>
+
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 hover:bg-black/5"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteFolder(folder.id);
+                            }}
+                            className="text-destructive focus:text-destructive"
+                            disabled={deleteFolder.isPending}
+                          >
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Folder
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                        {folder.name}
+                      </h3>
+
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-4 w-4" />
+                          <span>{folder.noteCount || 0} {(folder.noteCount || 0) === 1 ? 'note' : 'notes'}</span>
                         </div>
+                        {(folder.subfolderCount || 0) > 0 && (
+                          <div className="flex items-center gap-1.5">
+                            <FolderIcon className="h-4 w-4" />
+                            <span>{folder.subfolderCount} {folder.subfolderCount === 1 ? 'folder' : 'folders'}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
 
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0 ml-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <MoreVertical className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDeleteFolder(folder.id);
-                          }}
-                          className="text-destructive focus:text-destructive"
-                          disabled={deleteFolder.isPending}
-                        >
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Delete Folder
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                    {/* Decorative accent */}
+                    <div
+                      className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-5"
+                      style={{
+                        backgroundColor: folderColor,
+                        transform: 'translate(25%, -25%)'
+                      }}
+                    />
+                  </CardContent>
+                </Card>
+              );
+            })}
 
             {/* Render Notes in Grid */}
             {filteredNotes.map((note) => {
@@ -345,55 +352,22 @@ export function NotesListPage() {
               const hasCollaborators =
                 note.permissions && note.permissions.length > 0;
 
+              // Generate content preview
+              const contentPreview = contentToPlainText(note.content || '').trim();
+              const previewText = contentPreview.length > 120
+                ? contentPreview.substring(0, 120) + '...'
+                : contentPreview || 'No content yet';
+
               return (
                 <Card
                   key={note.id}
-                  className="group hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer border-2 hover:border-primary/20 bg-gradient-to-br from-card to-card/80"
+                  className="group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
                   onClick={() => navigate(`/notes/${note.id}`)}
                 >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                            <FileText className="h-4 w-4 text-primary" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <CardTitle className="text-sm font-semibold truncate mb-2">
-                              {note.title || "Untitled Note"}
-                            </CardTitle>
-
-                            {/* Footer with badges and info */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-2">
-                                <Badge
-                                  variant={isOwner ? "default" : "secondary"}
-                                  className="text-xs px-2 py-0"
-                                >
-                                  {permissionLevel}
-                                </Badge>
-                                {hasCollaborators && (
-                                  <div className="flex items-center text-xs text-muted-foreground">
-                                    <Users className="h-3 w-3 mr-1" />
-                                    {note.permissions.length + 1}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="flex items-center justify-between mt-2">
-                              <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                                <Calendar className="h-3 w-3" />
-                                {formatDistanceToNow(new Date(note.updatedAt), {
-                                  addSuffix: true,
-                                })}
-                              </div>
-                              <div className="text-xs text-muted-foreground truncate max-w-16">
-                                {isOwner ? "You" : note.owner.name}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                  <CardContent className="p-6 h-full flex flex-col">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-sm">
+                        <FileText className="h-6 w-6 text-white" />
                       </div>
 
                       <DropdownMenu>
@@ -401,7 +375,7 @@ export function NotesListPage() {
                           <Button
                             variant="ghost"
                             size="sm"
-                            className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0 ml-2"
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-8 w-8 p-0 hover:bg-black/5"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <MoreVertical className="h-4 w-4" />
@@ -451,6 +425,47 @@ export function NotesListPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
+
+                    <div className="flex-1 flex flex-col space-y-4">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                          {note.title || "Untitled Note"}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                          {previewText}
+                        </p>
+                      </div>
+
+                      <div className="mt-auto space-y-3">
+                        <div className="flex items-center gap-3">
+                          <Badge
+                            variant={isOwner ? "default" : "secondary"}
+                            className="text-xs px-2 py-1"
+                          >
+                            {permissionLevel}
+                          </Badge>
+                          {hasCollaborators && (
+                            <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                              <Users className="h-4 w-4" />
+                              <span>{note.permissions.length + 1} collaborators</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4" />
+                            <span>{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</span>
+                          </div>
+                          <span className="font-medium">
+                            {isOwner ? "You" : note.owner.name}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Decorative accent */}
+                    <div className="absolute top-0 right-0 w-20 h-20 rounded-full bg-primary/5 transform translate-x-6 -translate-y-6" />
                   </CardContent>
                 </Card>
               );
