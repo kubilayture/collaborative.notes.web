@@ -23,6 +23,7 @@ import {
 } from "../../components/ui/dropdown-menu";
 import { MoveNoteDialog } from "../../components/folders/MoveNoteDialog";
 import { CreateFolderDialog } from "../../components/folders/CreateFolderDialog";
+import { EditFolderDialog } from "../../components/folders/EditFolderDialog";
 import { FolderBreadcrumb } from "../../components/folders/FolderBreadcrumb";
 import { ViewToggle, type ViewMode } from "../../components/layout/ViewToggle";
 import {
@@ -46,6 +47,7 @@ import {
   FolderPlus,
   Folder as FolderIcon,
   FileText,
+  Edit,
 } from "lucide-react";
 import { SharePermissionsDialog } from "../../components/notes/SharePermissionsDialog";
 import { NotesListView } from "../../components/notes/NotesListView";
@@ -56,6 +58,8 @@ export function NotesListPage() {
   const [shareNote, setShareNote] = useState<Note | null>(null);
   const [moveOpen, setMoveOpen] = useState(false);
   const [moveNote, setMoveNote] = useState<Note | null>(null);
+  const [editFolderOpen, setEditFolderOpen] = useState(false);
+  const [editFolder, setEditFolder] = useState<Folder | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
   const { data: session } = useSession();
   const queryClient = useQueryClient();
@@ -130,6 +134,11 @@ export function NotesListPage() {
     ) {
       deleteFolder.mutate(folderId);
     }
+  };
+
+  const handleEditFolder = (folder: Folder) => {
+    setEditFolder(folder);
+    setEditFolderOpen(true);
   };
 
   const getNotePermissionLevel = (note: Note) => {
@@ -258,6 +267,7 @@ export function NotesListPage() {
               setMoveOpen(true);
             }}
             onDeleteNote={handleDeleteNote}
+            onEditFolder={handleEditFolder}
             onDeleteFolder={handleDeleteFolder}
             onFolderClick={(folderId) => navigate(`/notes/folder/${folderId}`)}
             canEditNote={canEditNote}
@@ -298,6 +308,16 @@ export function NotesListPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditFolder(folder);
+                            }}
+                          >
+                            <Edit className="h-4 w-4 mr-2" />
+                            Edit Folder
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={(e) => {
                               e.stopPropagation();
@@ -524,6 +544,14 @@ export function NotesListPage() {
           open={createFolderOpen}
           onOpenChange={setCreateFolderOpen}
           parentId={folderId}
+        />
+        <EditFolderDialog
+          open={editFolderOpen}
+          onOpenChange={(o) => {
+            setEditFolderOpen(o);
+            if (!o) setEditFolder(null);
+          }}
+          folder={editFolder}
         />
       </div>
     </div>

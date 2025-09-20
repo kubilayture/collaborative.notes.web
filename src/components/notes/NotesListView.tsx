@@ -16,6 +16,7 @@ import {
   FolderOpen,
   Trash2,
   Folder as FolderIcon,
+  Edit,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Note } from "../../hooks/notes.hook";
@@ -24,11 +25,12 @@ import type { Folder } from "../../hooks/folders.hook";
 interface NotesListViewProps {
   notes: Note[];
   folders: Folder[];
-  session: any;
+  session: { user?: { id: string; name: string } } | null;
   onEditNote: (noteId: string) => void;
   onShareNote: (note: Note) => void;
   onMoveNote: (note: Note) => void;
   onDeleteNote: (noteId: string) => void;
+  onEditFolder: (folder: Folder) => void;
   onDeleteFolder: (folderId: string) => void;
   onFolderClick: (folderId: string) => void;
   canEditNote: (note: Note) => boolean;
@@ -44,6 +46,7 @@ export function NotesListView({
   onShareNote,
   onMoveNote,
   onDeleteNote,
+  onEditFolder,
   onDeleteFolder,
   onFolderClick,
   canEditNote,
@@ -241,6 +244,16 @@ export function NotesListView({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onEditFolder(folder);
+              }}
+            >
+              <Edit className="h-4 w-4 mr-2" />
+              Edit Folder
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
             <DropdownMenuItem
               onClick={(e) => {
                 e.stopPropagation();
