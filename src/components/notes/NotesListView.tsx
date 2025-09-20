@@ -15,17 +15,11 @@ import {
   Share2,
   FolderOpen,
   Trash2,
-  Folder,
+  Folder as FolderIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import type { Note } from "../../hooks/notes.hook";
-
-interface Folder {
-  id: string;
-  name: string;
-  noteCount?: number;
-  subfolderCount?: number;
-}
+import type { Folder } from "../../hooks/folders.hook";
 
 interface NotesListViewProps {
   notes: Note[];
@@ -181,58 +175,87 @@ export function NotesListView({
     );
   };
 
-  const renderFolderItem = (folder: Folder) => (
-    <div
-      key={folder.id}
-      className="group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-      onClick={() => onFolderClick(folder.id)}
-    >
-      <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center flex-shrink-0">
-        <Folder className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-      </div>
+  const renderFolderItem = (folder: Folder) => {
+    // Use folder color or fallback to blue
+    const folderColor = folder.color || '#3B82F6';
+    const rgbColor = folderColor.startsWith('#')
+      ? {
+          r: parseInt(folderColor.slice(1, 3), 16),
+          g: parseInt(folderColor.slice(3, 5), 16),
+          b: parseInt(folderColor.slice(5, 7), 16)
+        }
+      : { r: 59, g: 130, b: 246 }; // Default blue
 
-      <div className="flex-1 min-w-0">
-        <h3 className="font-medium text-sm truncate mb-1">
-          {folder.name}
-        </h3>
-        <div className="flex items-center gap-4 text-xs text-muted-foreground">
-          <span className="flex items-center">
-            <FileText className="h-3 w-3 mr-1" />
-            {folder.noteCount || 0} notes
-          </span>
-          <span className="flex items-center">
-            <Folder className="h-3 w-3 mr-1" />
-            {folder.subfolderCount || 0} folders
-          </span>
+    return (
+      <div
+        key={folder.id}
+        className="group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
+        onClick={() => onFolderClick(folder.id)}
+      >
+        <div
+          className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
+          style={{
+            backgroundColor: `rgba(${rgbColor.r}, ${rgbColor.g}, ${rgbColor.b}, 0.15)`,
+          }}
+        >
+          <FolderIcon
+            className="h-4 w-4"
+            style={{ color: folderColor }}
+          />
         </div>
-      </div>
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <MoreVertical className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteFolder(folder.id);
-            }}
-            className="text-destructive focus:text-destructive"
-          >
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete Folder
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
-  );
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-medium text-sm truncate">
+              {folder.name}
+            </h3>
+            {folder.description && (
+              <span className="text-xs text-muted-foreground/60 italic truncate max-w-32">
+                {folder.description}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="flex items-center">
+              <FileText className="h-3 w-3 mr-1" />
+              {folder.noteCount || 0} {(folder.noteCount || 0) === 1 ? 'note' : 'notes'}
+            </span>
+            {(folder.subfolderCount || 0) > 0 && (
+              <span className="flex items-center">
+                <FolderIcon className="h-3 w-3 mr-1" />
+                {folder.subfolderCount} {folder.subfolderCount === 1 ? 'folder' : 'folders'}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem
+              onClick={(e) => {
+                e.stopPropagation();
+                onDeleteFolder(folder.id);
+              }}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-4 w-4 mr-2" />
+              Delete Folder
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-6">

@@ -313,22 +313,46 @@ export function NotesListPage() {
                       </DropdownMenu>
                     </div>
 
-                    <div className="space-y-3">
-                      <h3 className="font-semibold text-lg leading-tight line-clamp-2">
-                        {folder.name}
-                      </h3>
-
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <div className="flex items-center gap-1.5">
-                          <FileText className="h-4 w-4" />
-                          <span>{folder.noteCount || 0} {(folder.noteCount || 0) === 1 ? 'note' : 'notes'}</span>
-                        </div>
-                        {(folder.subfolderCount || 0) > 0 && (
-                          <div className="flex items-center gap-1.5">
-                            <FolderIcon className="h-4 w-4" />
-                            <span>{folder.subfolderCount} {folder.subfolderCount === 1 ? 'folder' : 'folders'}</span>
-                          </div>
+                    <div className="flex-1 flex flex-col space-y-4">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg leading-tight line-clamp-2">
+                          {folder.name}
+                        </h3>
+                        {folder.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                            {folder.description}
+                          </p>
                         )}
+                        {!folder.description && (
+                          <p className="text-sm text-muted-foreground/60 italic">
+                            {(folder.noteCount || 0) === 0
+                              ? 'Empty folder - add your first note'
+                              : 'Organize your notes and ideas here'
+                            }
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="mt-auto space-y-3">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <FileText className="h-4 w-4" />
+                            <span>{folder.noteCount || 0} {(folder.noteCount || 0) === 1 ? 'note' : 'notes'}</span>
+                          </div>
+                          {(folder.subfolderCount || 0) > 0 && (
+                            <div className="flex items-center gap-1.5">
+                              <FolderIcon className="h-4 w-4" />
+                              <span>{folder.subfolderCount} {folder.subfolderCount === 1 ? 'folder' : 'folders'}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4" />
+                            <span>Created {formatDistanceToNow(new Date(folder.createdAt), { addSuffix: true })}</span>
+                          </div>
+                        </div>
                       </div>
                     </div>
 
