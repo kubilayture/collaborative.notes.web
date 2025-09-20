@@ -53,7 +53,6 @@ export function NoteEditorPage() {
   }, [noteId, queryClient]);
 
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
   const [hasChanges, setHasChanges] = useState(false);
   const [editorContent, setEditorContent] = useState("");
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
@@ -61,7 +60,6 @@ export function NoteEditorPage() {
   useEffect(() => {
     if (note) {
       setTitle(note.title);
-      setContent(contentToText(note.content));
       setEditorContent(contentToText(note.content));
     }
   }, [note]);
@@ -237,11 +235,7 @@ export function NoteEditorPage() {
               Last updated {formatDistanceToNow(note.updatedAt)}
             </span>
           </div>
-          <div
-            className="flex items-center gap-1"
-            title={`Created by ${isOwner ? "You" : note.owner.name}`}
-          >
-            <Pencil className="h-5 w-5 sm:h-3 sm:w-3" />
+          <div className="flex items-center gap-1">
             <span className="sm:hidden">
               {isOwner ? "You" : note.owner.name}
             </span>

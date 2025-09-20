@@ -12,6 +12,7 @@ import {
   useLeaveThread,
 } from "../../hooks/messaging.hook";
 import { useFriends } from "../../hooks/friends.hook";
+import { useCurrentUser } from "../../hooks/profile.hook";
 import { Button } from "../../components/ui/button";
 import { Input } from "../../components/ui/input";
 import { Badge } from "../../components/ui/badge";
@@ -37,6 +38,7 @@ import {
 } from "../../components/ui/select";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
+import { UserAvatar } from "../../components/common/UserAvatar";
 import {
   ArrowLeft,
   Send,
@@ -53,6 +55,7 @@ export function ThreadPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: session } = useSession();
+  const { data: currentUser } = useCurrentUser();
   const { emit, on, off, isConnected } = useWebSocket();
 
   const [newMessage, setNewMessage] = useState("");
@@ -255,38 +258,6 @@ export function ThreadPage() {
       (f) => !thread.participants.some((p) => p.user.id === f.friend.id)
     ) || [];
 
-  // Helper function to get initials from name
-  const getInitials = (name: string): string => {
-    if (!name) return "?";
-    const words = name.trim().split(/\s+/);
-    if (words.length === 1) {
-      return words[0].charAt(0).toUpperCase();
-    }
-    return (
-      words[0].charAt(0) + words[words.length - 1].charAt(0)
-    ).toUpperCase();
-  };
-
-  // Helper function to generate consistent colors based on user ID
-  const generateUserColor = (userId: string): string => {
-    const colors = [
-      "#FF6B6B",
-      "#4ECDC4",
-      "#45B7D1",
-      "#96CEB4",
-      "#FFEAA7",
-      "#DDA0DD",
-      "#98D8C8",
-      "#F7DC6F",
-      "#BB8FCE",
-      "#85C1E9",
-    ];
-    let hash = 0;
-    for (let i = 0; i < userId.length; i++) {
-      hash = ((hash << 5) - hash + userId.charCodeAt(i)) & 0xffffffff;
-    }
-    return colors[Math.abs(hash) % colors.length];
-  };
 
   return (
     <div className="bg-background h-[calc(100vh-56px)] flex flex-col overflow-hidden">
@@ -410,7 +381,6 @@ export function ThreadPage() {
             ) : (
               messages.map((message) => {
                 const isOwnMessage = message.senderId === session?.user?.id;
-                const senderColor = generateUserColor(message.senderId);
 
                 return (
                   <div
@@ -420,16 +390,16 @@ export function ThreadPage() {
                     }`}
                   >
                     {/* Avatar */}
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0"
-                      style={{ backgroundColor: senderColor }}
-                    >
-                      {getInitials(
-                        isOwnMessage
-                          ? session?.user?.name || "You"
-                          : message.sender.name
-                      )}
-                    </div>
+                    <UserAvatar
+                      name={isOwnMessage
+                        ? session?.user?.name || "You"
+                        : message.sender.name}
+                      avatar={isOwnMessage
+                        ? currentUser?.profile?.avatar
+                        : message.sender.image}
+                      size="md"
+                      className="flex-shrink-0"
+                    />
 
                     {/* Message Bubble */}
                     <div
@@ -504,11 +474,12 @@ export function ThreadPage() {
             {/* Message Input */}
             <div className="p-6">
               <form onSubmit={handleSendMessage} className="flex gap-3">
-                <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-medium text-primary">
-                    {getInitials(session?.user?.name || "You")}
-                  </span>
-                </div>
+                <UserAvatar
+                  name={session?.user?.name || "You"}
+                  avatar={currentUser?.profile?.avatar}
+                  size="md"
+                  className="flex-shrink-0"
+                />
                 <div className="flex-1 flex gap-2">
                   <Input
                     placeholder="Type a message..."
@@ -546,19 +517,17 @@ export function ThreadPage() {
             <div className="space-y-3">
               {thread.participants.map((participant) => {
                 const isCurrentUser = participant.user.id === session?.user?.id;
-                const userColor = generateUserColor(participant.user.id);
 
                 return (
                   <div
                     key={participant.user.id}
                     className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors"
                   >
-                    <div
-                      className="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium"
-                      style={{ backgroundColor: userColor }}
-                    >
-                      {getInitials(participant.user.name)}
-                    </div>
+                    <UserAvatar
+                      name={participant.user.name}
+                      avatar={participant.user.image}
+                      size="md"
+                    />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="font-medium text-sm truncate">

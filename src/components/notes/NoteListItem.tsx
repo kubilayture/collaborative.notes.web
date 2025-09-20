@@ -86,7 +86,7 @@ export function NoteListItem({
                       </div>
                     )}
                   </div>
-                  <div className="ml-auto">
+                  <div className="ml-auto text-xs text-muted-foreground" title={isOwner ? "You" : note.owner.name}>
                     {isOwner ? "You" : note.owner.name}
                   </div>
                 </div>

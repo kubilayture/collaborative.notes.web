@@ -9,6 +9,7 @@ import * as Y from "yjs";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSession } from "../../lib/auth-client";
+import { useCurrentUser } from "../../hooks/profile.hook";
 import { EditorToolbar } from "./EditorToolbar";
 
 interface CollaborativeEditorProps {
@@ -64,6 +65,7 @@ export function CollaborativeEditor({
   onUpdate,
 }: CollaborativeEditorProps) {
   const { data: session } = useSession();
+  const { data: currentUser } = useCurrentUser();
   const queryClient = useQueryClient();
   const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
   const [doc] = useState(() => new Y.Doc());
@@ -184,6 +186,7 @@ export function CollaborativeEditor({
           user: {
             name: session.user.name,
             color: userColor,
+            avatar: currentUser?.profile?.avatar,
           },
           render: (user: any) => {
             const cursor = document.createElement("span");
@@ -195,24 +198,34 @@ export function CollaborativeEditor({
             userIndicator.classList.add("collaboration-cursor__user-indicator");
             userIndicator.setAttribute("style", `background-color: ${user.color}`);
 
-            // Get initials from user name
-            const initials = getInitials(user.name);
-
             // Create the content container
             const content = document.createElement("span");
             content.classList.add("collaboration-cursor__content");
 
-            // Create the initial letter
-            const initial = document.createElement("span");
-            initial.classList.add("collaboration-cursor__initial");
-            initial.textContent = initials;
+            // Create avatar or initials
+            if (user.avatar) {
+              // Create avatar image
+              const avatarImg = document.createElement("img");
+              avatarImg.classList.add("collaboration-cursor__avatar");
+              avatarImg.src = user.avatar;
+              avatarImg.alt = user.name;
+              avatarImg.setAttribute("style", "width: 24px; height: 24px; border-radius: 50%; object-fit: cover;");
+              content.appendChild(avatarImg);
+            } else {
+              // Fallback to initials
+              const initials = getInitials(user.name);
+              const initial = document.createElement("span");
+              initial.classList.add("collaboration-cursor__initial");
+              initial.textContent = initials;
+              initial.setAttribute("style", "width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-size: 12px; font-weight: 500; color: white;");
+              content.appendChild(initial);
+            }
 
             // Create the full name (hidden by default)
             const fullName = document.createElement("span");
             fullName.classList.add("collaboration-cursor__fullname");
             fullName.textContent = user.name;
 
-            content.appendChild(initial);
             content.appendChild(fullName);
             userIndicator.appendChild(content);
 
@@ -225,7 +238,7 @@ export function CollaborativeEditor({
     }
 
     return baseExtensions;
-  }, [provider, session?.user, doc]);
+  }, [provider, session?.user, currentUser?.profile?.avatar, doc]);
 
   const editor = useEditor(
     {

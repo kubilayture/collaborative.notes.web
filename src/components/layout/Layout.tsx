@@ -6,6 +6,8 @@ import { Sidebar } from "./Sidebar";
 import { GlobalSearch } from "./GlobalSearch";
 import { useNotificationToasts } from "../../hooks/useNotificationToasts";
 import { useTheme } from "../../providers/theme-provider";
+import { useCurrentUser } from "../../hooks/profile.hook";
+import { UserAvatar } from "../common/UserAvatar";
 import {
   Sheet,
   SheetContent,
@@ -23,6 +25,7 @@ import { Menu, ChevronDown, Sun, Moon, LogOut, Settings, User } from "lucide-rea
 const Layout = () => {
   const navigate = useNavigate();
   const { data: session } = useSession();
+  const { data: currentUser } = useCurrentUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, setTheme } = useTheme();
@@ -98,11 +101,12 @@ const Layout = () => {
                     variant="ghost"
                     className="flex items-center gap-2 h-9 px-3"
                   >
-                    <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
-                      <span className="text-xs font-medium text-primary">
-                        {session.user.name.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
+                    <UserAvatar
+                      name={session.user.name}
+                      avatar={currentUser?.profile?.avatar}
+                      size="sm"
+                      className="h-7 w-7"
+                    />
                     <span className="text-sm font-medium hidden sm:inline">
                       {session.user.name}
                     </span>
