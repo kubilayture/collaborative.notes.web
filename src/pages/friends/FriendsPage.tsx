@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { useSession } from "../../lib/auth-client";
+import { useOutletContext } from "react-router";
+import { useSearchUsers } from "../../hooks/search.hook";
 import { toast } from "sonner";
 import {
   useFriends,
@@ -50,6 +52,10 @@ import { formatDistanceToNow } from "date-fns";
 export function FriendsPage() {
   const [email, setEmail] = useState("");
   const { data: session } = useSession();
+  const { searchQuery, searchContext } = useOutletContext<{
+    searchQuery: string;
+    searchContext: string;
+  }>();
 
   const {
     data: friends,
@@ -74,6 +80,17 @@ export function FriendsPage() {
   const acceptFriendRequest = useAcceptFriendRequest();
   const declineFriendRequest = useDeclineFriendRequest();
   const removeFriend = useRemoveFriend();
+
+  // Filter friends locally based on search query
+  const filteredFriends =
+    friends?.filter((friend) =>
+      !searchQuery || searchQuery.length < 2 || searchContext !== "friends"
+        ? true
+        : friend.friend.name
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          friend.friend.email.toLowerCase().includes(searchQuery.toLowerCase())
+    ) || [];
   const markAllRead = useMarkAllRead();
 
   const handleSendRequest = async (e: React.FormEvent) => {
@@ -202,7 +219,7 @@ export function FriendsPage() {
         </TabsList>
 
         <TabsContent value="friends" className="mt-6">
-          {!friends || friends.length === 0 ? (
+          {filteredFriends.length === 0 ? (
             <Card>
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Users className="h-12 w-12 text-muted-foreground mb-4" />
@@ -215,7 +232,7 @@ export function FriendsPage() {
             </Card>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {friends.map((friendItem) => {
+              {filteredFriends.map((friendItem) => {
                 return (
                   <Card key={friendItem.friend.id}>
                     <CardHeader className="pb-3">
