@@ -21,6 +21,8 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import type { Note } from "../../hooks/notes.hook";
 import type { Folder } from "../../hooks/folders.hook";
+import { useMoveNote, useUpdateFolder } from "../../hooks/folders.hook";
+import { useState } from "react";
 
 interface NotesListViewProps {
   notes: Note[];
@@ -53,12 +55,91 @@ export function NotesListView({
   canDeleteNote,
   isDeleting,
 }: NotesListViewProps) {
+  const moveNote = useMoveNote();
+  const updateFolder = useUpdateFolder();
+  const [draggedItem, setDraggedItem] = useState<{ type: 'note' | 'folder'; id: string } | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
   const getNotePermissionLevel = (note: Note) => {
     if (note.ownerId === session?.user?.id) return "Owner";
     const permission = note.permissions?.find(
       (p) => p.userId === session?.user?.id
     );
     return permission ? permission.permission : null;
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, type: 'note' | 'folder', id: string) => {
+    console.log('Drag start:', type, id);
+    setDraggedItem({ type, id });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', ''); // Required for Firefox
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverFolder(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    // Only allow drop if we're dragging something and it's not the same folder
+    if (draggedItem && draggedItem.id !== folderId) {
+      console.log('Drag over folder:', folderId);
+      setDragOverFolder(folderId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    // Only clear if we're really leaving the folder (not entering a child element)
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverFolder(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Drop event:', draggedItem, 'onto folder:', targetFolderId);
+
+    // Prevent dropping item onto itself
+    if (!draggedItem || draggedItem.id === targetFolderId) {
+      console.log('Preventing drop: item onto itself');
+      setDraggedItem(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    // For folders, also prevent dropping into a child folder (would create infinite loop)
+    if (draggedItem.type === 'folder') {
+      const targetFolder = folders.find(f => f.id === targetFolderId);
+      if (targetFolder?.parentId === draggedItem.id) {
+        setDraggedItem(null);
+        setDragOverFolder(null);
+        return;
+      }
+    }
+
+    if (draggedItem.type === 'note') {
+      // Move note to folder
+      moveNote.mutate({
+        noteId: draggedItem.id,
+        data: { folderId: targetFolderId }
+      });
+    } else if (draggedItem.type === 'folder') {
+      // Move folder to another folder (change parentId)
+      updateFolder.mutate({
+        id: draggedItem.id,
+        data: { parentId: targetFolderId }
+      });
+    }
+
+    setDraggedItem(null);
+    setDragOverFolder(null);
   };
 
   // Sort notes by updatedAt (most recent first)
@@ -86,8 +167,18 @@ export function NotesListView({
     return (
       <div
         key={note.id}
-        className="group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-        onClick={() => onEditNote(note.id)}
+        className={`group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${
+          draggedItem?.type === 'note' && draggedItem.id === note.id ? 'opacity-50' : ''
+        }`}
+        draggable={true}
+        onDragStart={(e) => handleDragStart(e, 'note', note.id)}
+        onDragEnd={handleDragEnd}
+        onClick={(e) => {
+          // Prevent click when dragging or if it was a drag operation
+          if (!draggedItem && e.detail !== 0) {
+            onEditNote(note.id);
+          }
+        }}
       >
         <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
           <FileText className="h-4 w-4 text-primary" />
@@ -192,8 +283,23 @@ export function NotesListView({
     return (
       <div
         key={folder.id}
-        className="group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-pointer transition-colors"
-        onClick={() => onFolderClick(folder.id)}
+        className={`group flex items-center gap-3 py-2 px-3 hover:bg-muted/50 rounded-lg cursor-grab active:cursor-grabbing transition-colors ${
+          draggedItem?.type === 'folder' && draggedItem.id === folder.id ? 'opacity-50' : ''
+        } ${
+          dragOverFolder === folder.id ? 'bg-primary/10 border-primary border-2 border-dashed' : ''
+        }`}
+        draggable
+        onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+        onDragEnd={handleDragEnd}
+        onDragOver={(e) => handleDragOver(e, folder.id)}
+        onDragLeave={(e) => handleDragLeave(e)}
+        onDrop={(e) => handleDrop(e, folder.id)}
+        onClick={(e) => {
+          // Prevent click when dragging or if it was a drag operation
+          if (!draggedItem && e.detail !== 0) {
+            onFolderClick(folder.id);
+          }
+        }}
       >
         <div
           className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"

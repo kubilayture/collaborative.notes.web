@@ -7,7 +7,7 @@ import {
   type Note,
   contentToPlainText,
 } from "../../hooks/notes.hook";
-import { useFolders, useDeleteFolder, type Folder } from "../../hooks/folders.hook";
+import { useFolders, useDeleteFolder, useMoveNote, useUpdateFolder, type Folder } from "../../hooks/folders.hook";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -61,6 +61,11 @@ export function NotesListPage() {
   const [editFolderOpen, setEditFolderOpen] = useState(false);
   const [editFolder, setEditFolder] = useState<Folder | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
+
+  // Drag and drop state
+  const [draggedItem, setDraggedItem] = useState<{ type: 'note' | 'folder'; id: string } | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
+
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { folderId } = useParams<{ folderId: string }>();
@@ -72,6 +77,8 @@ export function NotesListPage() {
   const { data: folders, isLoading: foldersLoading } = useFolders(folderId);
   const deleteNote = useDeleteNote();
   const deleteFolder = useDeleteFolder();
+  const moveNoteMutation = useMoveNote();
+  const updateFolder = useUpdateFolder();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -88,6 +95,75 @@ export function NotesListPage() {
       }
       return newParams;
     });
+  };
+
+  // Drag and drop handlers
+  const handleDragStart = (e: React.DragEvent, type: 'note' | 'folder', id: string) => {
+    console.log('Drag start:', type, id);
+    setDraggedItem({ type, id });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', '');
+  };
+
+  const handleDragEnd = () => {
+    setDraggedItem(null);
+    setDragOverFolder(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, folderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+
+    if (draggedItem && draggedItem.id !== folderId) {
+      console.log('Drag over folder:', folderId);
+      setDragOverFolder(folderId);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverFolder(null);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent, targetFolderId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('Drop event:', draggedItem, 'onto folder:', targetFolderId);
+
+    if (!draggedItem || draggedItem.id === targetFolderId) {
+      console.log('Preventing drop: item onto itself');
+      setDraggedItem(null);
+      setDragOverFolder(null);
+      return;
+    }
+
+    if (draggedItem.type === 'folder') {
+      const targetFolder = folders?.find(f => f.id === targetFolderId);
+      if (targetFolder?.parentId === draggedItem.id) {
+        setDraggedItem(null);
+        setDragOverFolder(null);
+        return;
+      }
+    }
+
+    if (draggedItem.type === 'note') {
+      moveNoteMutation.mutate({
+        noteId: draggedItem.id,
+        data: { folderId: targetFolderId }
+      });
+    } else if (draggedItem.type === 'folder') {
+      updateFolder.mutate({
+        id: draggedItem.id,
+        data: { parentId: targetFolderId }
+      });
+    }
+
+    setDraggedItem(null);
+    setDragOverFolder(null);
   };
 
   if (isLoading || foldersLoading) {
@@ -284,8 +360,22 @@ export function NotesListPage() {
               return (
                 <Card
                   key={folder.id}
-                  className="group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                  onClick={() => navigate(`/notes/folder/${folder.id}`)}
+                  className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing ${
+                    draggedItem?.type === 'folder' && draggedItem.id === folder.id ? 'opacity-50' : ''
+                  } ${
+                    dragOverFolder === folder.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''
+                  }`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e, folder.id)}
+                  onDragLeave={(e) => handleDragLeave(e)}
+                  onDrop={(e) => handleDrop(e, folder.id)}
+                  onClick={(e) => {
+                    if (!draggedItem && e.detail !== 0) {
+                      navigate(`/notes/folder/${folder.id}`);
+                    }
+                  }}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between mb-4">
@@ -405,8 +495,17 @@ export function NotesListPage() {
               return (
                 <Card
                   key={note.id}
-                  className="group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-pointer"
-                  onClick={() => navigate(`/notes/${note.id}`)}
+                  className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing ${
+                    draggedItem?.type === 'note' && draggedItem.id === note.id ? 'opacity-50' : ''
+                  }`}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, 'note', note.id)}
+                  onDragEnd={handleDragEnd}
+                  onClick={(e) => {
+                    if (!draggedItem && e.detail !== 0) {
+                      navigate(`/notes/${note.id}`);
+                    }
+                  }}
                 >
                   <CardContent className="p-6 h-full flex flex-col">
                     <div className="flex items-start justify-between mb-4">
