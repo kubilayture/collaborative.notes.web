@@ -6,6 +6,7 @@ import {
   CardHeader,
   CardTitle,
 } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
 import { useNavigate } from "react-router";
 import {
   ArrowRight,
@@ -15,11 +16,27 @@ import {
   Zap,
   Shield,
   Globe,
+  Plus,
+  Clock,
+  Mail,
+  UserPlus,
+  TrendingUp,
+  Activity,
+  Eye,
+  Edit,
+  Calendar,
 } from "lucide-react";
+import { useNotes } from "../hooks/notes.hook";
+import { useFolders } from "../hooks/folders.hook";
+import { useFriends } from "../hooks/friends.hook";
+import { useThreads } from "../hooks/messaging.hook";
+import { useNotificationCounts } from "../hooks/notifications.hook";
+import { formatDistanceToNow } from "date-fns";
 import { motion } from "framer-motion";
 import { BackgroundBeams } from "../components/ui/background-beams";
 import { Spotlight } from "../components/ui/spotlight";
 import { InfiniteMovingCards } from "../components/ui/infinite-moving-cards";
+import { NotesListView } from "../components/notes/NotesListView";
 
 const testimonials = [
   {
@@ -102,6 +119,14 @@ const features = [
 export function HomePage() {
   const { data: session } = useSession();
   const navigate = useNavigate();
+
+  // Fetch dashboard data (hooks must be called before any conditional returns)
+  const { data: notes, isLoading: notesLoading } = useNotes();
+  const { data: folders, isLoading: foldersLoading } = useFolders();
+  const { data: friends, isLoading: friendsLoading } = useFriends();
+  const { data: threads, isLoading: threadsLoading } = useThreads();
+  const { data: notificationCounts, isLoading: notificationsLoading } =
+    useNotificationCounts();
 
   if (!session?.user) {
     return (
@@ -406,67 +431,323 @@ export function HomePage() {
     );
   }
 
+  // Process data for dashboard
+  const recentNotes = notes?.slice(0, 5) || [];
+  const recentThreads = threads?.slice(0, 3) || [];
+  const pendingInvitationsCount = notificationCounts?.invitations || 0;
+  const unreadMessages = threads?.filter((t) => t.unreadCount > 0) || [];
+
+  // Get recent activity (last 7 days)
+  const sevenDaysAgo = new Date();
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+  const recentActivity =
+    notes?.filter((note) => new Date(note.updatedAt) > sevenDaysAgo) || [];
+
+  // Calculate stats
+  const totalNotes = notes?.length || 0;
+  const totalFolders = folders?.length || 0;
+  const totalFriends = friends?.length || 0;
+  const onlineFriends = friends?.filter((f) => f.isOnline)?.length || 0;
+
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold">
+    <div className="container mx-auto p-4 sm:p-6 space-y-6">
+      {/* Header */}
+      <div className="space-y-2">
+        <h1 className="text-2xl sm:text-3xl font-bold">
           Welcome back, {session.user.name}!
         </h1>
-        <p className="text-muted-foreground mt-2 text-sm sm:text-base">
-          Ready to collaborate on your notes?
+        <p className="text-muted-foreground text-sm sm:text-base">
+          Here's what's happening with your collaborative workspace
         </p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {/* Quick Actions */}
+      <div className="flex flex-wrap gap-3">
+        <Button onClick={() => navigate("/notes/new")} className="gap-2">
+          <Plus className="h-4 w-4" />
+          New Note
+        </Button>
+        <Button
+          onClick={() => navigate("/messaging")}
+          variant="outline"
+          className="gap-2"
+        >
+          <MessageSquare className="h-4 w-4" />
+          New Message
+        </Button>
+        <Button
+          onClick={() => navigate("/friends")}
+          variant="outline"
+          className="gap-2"
+        >
+          <UserPlus className="h-4 w-4" />
+          Invite Friends
+        </Button>
+      </div>
+
+      {/* Stats Overview */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader>
-            <CardTitle>My Notes</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col h-full justify-between">
-            <p className="text-muted-foreground mb-4">
-              Access and manage your collaborative notes.
-            </p>
-            <Button onClick={() => navigate("/notes")} className="w-full">
-              View Notes
-            </Button>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-2">
+              <FileText className="h-5 w-5 text-primary" />
+              <div>
+                <p className="text-2xl font-bold">{totalNotes}</p>
+                <p className="text-xs text-muted-foreground">Total Notes</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Friends</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col h-full justify-between">
-            <p className="text-muted-foreground mb-4">
-              Manage your friends and send collaboration invites.
-            </p>
-            <Button
-              onClick={() => navigate("/friends")}
-              className="w-full"
-              variant="outline"
-            >
-              Manage Friends
-            </Button>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-2">
+              <Users className="h-5 w-5 text-blue-500" />
+              <div>
+                <p className="text-2xl font-bold">{totalFriends}</p>
+                <p className="text-xs text-muted-foreground">Friends</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Messages</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col h-full justify-between">
-            <p className="text-muted-foreground mb-4">
-              Chat with your collaborators in real-time.
-            </p>
-            <Button
-              onClick={() => navigate("/messages")}
-              className="w-full"
-              variant="outline"
-            >
-              View Messages
-            </Button>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-2">
+              <Activity className="h-5 w-5 text-green-500" />
+              <div>
+                <p className="text-2xl font-bold">{onlineFriends}</p>
+                <p className="text-xs text-muted-foreground">Online Now</p>
+              </div>
+            </div>
           </CardContent>
         </Card>
+
+        <Card>
+          <CardContent className="p-4 sm:p-6">
+            <div className="flex items-center space-x-2">
+              <TrendingUp className="h-5 w-5 text-orange-500" />
+              <div>
+                <p className="text-2xl font-bold">{recentActivity.length}</p>
+                <p className="text-xs text-muted-foreground">Recent Activity</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Main Dashboard Grid */}
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Recent Notes */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Recent Notes
+            </CardTitle>
+            <Button
+              onClick={() => navigate("/notes")}
+              variant="outline"
+              size="sm"
+            >
+              View All
+            </Button>
+          </CardHeader>
+          <CardContent>
+            {notesLoading ? (
+              <div className="space-y-3">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            ) : recentNotes.length > 0 ? (
+              <NotesListView
+                notes={recentNotes}
+                folders={[]}
+                session={session}
+                onEditNote={(noteId) => navigate(`/notes/${noteId}`)}
+                onShareNote={() => {}}
+                onMoveNote={() => {}}
+                onDeleteNote={() => {}}
+                onEditFolder={() => {}}
+                onDeleteFolder={() => {}}
+                onFolderClick={() => {}}
+                canEditNote={() => true}
+                canDeleteNote={() => false}
+                isDeleting={false}
+              />
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No notes yet. Create your first note to get started!</p>
+                <Button
+                  onClick={() => navigate("/notes/new")}
+                  className="mt-4"
+                  size="sm"
+                >
+                  Create Note
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Sidebar - Messages & Notifications */}
+        <div className="space-y-6">
+          {/* Pending Invitations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="h-5 w-5" />
+                Invitations
+                {pendingInvitationsCount > 0 && (
+                  <Badge variant="destructive" className="ml-auto">
+                    {pendingInvitationsCount}
+                  </Badge>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {notificationsLoading ? (
+                <div className="animate-pulse">
+                  <div className="h-4 bg-muted rounded w-full mb-2"></div>
+                  <div className="h-3 bg-muted rounded w-2/3"></div>
+                </div>
+              ) : pendingInvitationsCount > 0 ? (
+                <div className="space-y-2">
+                  <div className="p-2 rounded border bg-card">
+                    <p className="text-sm font-medium">Friend Requests</p>
+                    <p className="text-xs text-muted-foreground">
+                      {pendingInvitationsCount}{" "}
+                      {pendingInvitationsCount === 1
+                        ? "invitation"
+                        : "invitations"}{" "}
+                      pending
+                    </p>
+                  </div>
+                  <Button
+                    onClick={() => navigate("/friends")}
+                    variant="outline"
+                    size="sm"
+                    className="w-full"
+                  >
+                    View All ({pendingInvitationsCount})
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No pending invitations
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Recent Messages */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="h-5 w-5" />
+                Messages
+                {unreadMessages.length > 0 && (
+                  <Badge variant="destructive">
+                    {unreadMessages.reduce(
+                      (acc, thread) => acc + thread.unreadCount,
+                      0
+                    )}
+                  </Badge>
+                )}
+              </CardTitle>
+              <Button
+                onClick={() => navigate("/messaging")}
+                variant="outline"
+                size="sm"
+              >
+                View All
+              </Button>
+            </CardHeader>
+            <CardContent>
+              {threadsLoading ? (
+                <div className="space-y-3">
+                  {[1, 2].map((i) => (
+                    <div key={i} className="animate-pulse">
+                      <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : recentThreads.length > 0 ? (
+                <div className="space-y-3">
+                  {recentThreads.map((thread) => (
+                    <div
+                      key={thread.id}
+                      className="p-2 rounded border bg-card hover:bg-accent cursor-pointer transition-colors"
+                      onClick={() => navigate(`/messaging/${thread.id}`)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium truncate">
+                          {thread.name ||
+                            `Chat with ${thread.participants
+                              ?.map((p) => p.user.name)
+                              .join(", ")}`}
+                        </p>
+                        {thread.unreadCount > 0 && (
+                          <Badge variant="destructive" className="text-xs">
+                            {thread.unreadCount}
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistanceToNow(new Date(thread.updatedAt), {
+                          addSuffix: true,
+                        })}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-4 text-muted-foreground">
+                  <MessageSquare className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No messages yet</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Quick Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Eye className="h-5 w-5" />
+                Quick Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">Folders</span>
+                <span className="font-medium">{totalFolders}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  Shared Notes
+                </span>
+                <span className="font-medium">
+                  {notes?.filter(
+                    (n) => n.permissions && n.permissions.length > 0
+                  ).length || 0}
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-muted-foreground">
+                  Active Conversations
+                </span>
+                <span className="font-medium">{threads?.length || 0}</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );

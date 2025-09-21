@@ -21,7 +21,6 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Badge } from "../ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "../ui/avatar";
 import { Separator } from "../ui/separator";
 import {
   Table,
@@ -389,12 +388,11 @@ export function SharePermissionsDialog({
               {/* Owner */}
               <div className="flex items-center justify-between p-3 border rounded-lg">
                 <div className="flex items-center gap-3">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={note.owner.image} />
-                    <AvatarFallback>
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <span className="text-sm font-medium text-primary">
                       {getInitials(note.owner.name)}
-                    </AvatarFallback>
-                  </Avatar>
+                    </span>
+                  </div>
                   <div>
                     <p className="text-sm font-medium">{note.owner.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -419,14 +417,11 @@ export function SharePermissionsDialog({
                     className="flex items-center justify-between p-3 border rounded-lg"
                   >
                     <div className="flex items-center gap-3">
-                      <Avatar className="h-8 w-8">
-                        <AvatarImage src={permission.user?.image} />
-                        <AvatarFallback>
-                          {permission.user?.name
-                            ? getInitials(permission.user.name)
-                            : "?"}
-                        </AvatarFallback>
-                      </Avatar>
+                      <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-medium text-primary">
+                          {getInitials(permission.user?.name || "Unknown User")}
+                        </span>
+                      </div>
                       <div>
                         <p className="text-sm font-medium">
                           {permission.user?.name || "Unknown User"}
