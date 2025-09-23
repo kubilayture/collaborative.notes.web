@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useOutletContext } from "react-router";
 import { useThreads, useCreateThread } from "../../hooks/messaging.hook";
 import { useFriends } from "../../hooks/friends.hook";
+import { useSearchMessages } from "../../hooks/search.hook";
 import { Button } from "../../components/ui/button";
 import {
   Card,
@@ -32,6 +33,10 @@ import { formatDistanceToNow } from "date-fns";
 
 export function MessagingPage() {
   const navigate = useNavigate();
+  const { searchQuery, searchContext } = useOutletContext<{
+    searchQuery: string;
+    searchContext: string;
+  }>();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [selectedFriends, setSelectedFriends] = useState<string[]>([]);
@@ -44,6 +49,12 @@ export function MessagingPage() {
   } = useThreads();
   const { data: friends, isLoading: friendsLoading } = useFriends();
   const createThread = useCreateThread();
+  const { data: searchResults, isLoading: searchLoading } = useSearchMessages(
+    searchQuery || "",
+    searchContext === "messaging" &&
+      !!searchQuery &&
+      searchQuery.trim().length >= 2
+  );
 
   const handleCreateThread = async () => {
     if (!newThreadTitle.trim() || selectedFriends.length === 0) return;
@@ -68,7 +79,18 @@ export function MessagingPage() {
     navigate(`/messaging/${threadId}`);
   };
 
-  const isLoading = threadsLoading || friendsLoading;
+  // Use search results if we have a search query, otherwise use all threads
+  const displayThreads =
+    searchQuery &&
+    searchQuery.trim().length >= 2 &&
+    searchContext === "messaging"
+      ? searchResults?.threads || []
+      : threads || [];
+
+  const isLoading =
+    threadsLoading ||
+    friendsLoading ||
+    (searchQuery && searchContext === "messaging" && searchLoading);
   const hasError = threadsError;
 
   if (isLoading) return <Loading />;
@@ -207,13 +229,13 @@ export function MessagingPage() {
           {/* Conversation Counter - Better positioned for mobile */}
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <MessageSquare className="h-4 w-4" />
-            <span>{threads?.length || 0}</span>
+            <span>{displayThreads.length}</span>
             <span className="hidden sm:inline">conversations</span>
           </div>
         </div>
       </div>
 
-      {!threads || threads.length === 0 ? (
+      {displayThreads.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <MessageSquare className="h-12 w-12 text-muted-foreground mb-4" />
@@ -229,7 +251,7 @@ export function MessagingPage() {
         </Card>
       ) : (
         <div className="grid gap-4">
-          {threads.map((thread) => (
+          {displayThreads.map((thread) => (
             <Card
               key={thread.id}
               className="cursor-pointer hover:shadow-md transition-shadow"

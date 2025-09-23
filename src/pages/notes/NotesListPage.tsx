@@ -7,12 +7,16 @@ import {
   type Note,
   contentToPlainText,
 } from "../../hooks/notes.hook";
-import { useFolders, useDeleteFolder, useMoveNote, useUpdateFolder, type Folder } from "../../hooks/folders.hook";
-import { Button } from "../../components/ui/button";
 import {
-  Card,
-  CardContent,
-} from "../../components/ui/card";
+  useFolders,
+  useDeleteFolder,
+  useMoveNote,
+  useUpdateFolder,
+  type Folder,
+} from "../../hooks/folders.hook";
+import { useSearchNotes } from "../../hooks/search.hook";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
 import { Badge } from "../../components/ui/badge";
 import {
   DropdownMenu,
@@ -63,18 +67,28 @@ export function NotesListPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("grid");
 
   // Drag and drop state
-  const [draggedItem, setDraggedItem] = useState<{ type: 'note' | 'folder'; id: string } | null>(null);
+  const [draggedItem, setDraggedItem] = useState<{
+    type: "note" | "folder";
+    id: string;
+  } | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<string | null>(null);
 
   const { data: session } = useSession();
   const queryClient = useQueryClient();
   const { folderId } = useParams<{ folderId: string }>();
-  const { searchQuery } = useOutletContext<{ searchQuery: string }>();
+  const { searchQuery, searchContext } = useOutletContext<{
+    searchQuery: string;
+    searchContext: string;
+  }>();
   const [searchParams, setSearchParams] = useSearchParams();
   // Use URL parameter instead of useState for createFolderOpen
   const createFolderOpen = searchParams.get("createFolder") === "true";
   const { data: notes, isLoading, error, refetch } = useNotes(folderId);
   const { data: folders, isLoading: foldersLoading } = useFolders(folderId);
+  const { data: searchResults, isLoading: searchLoading } = useSearchNotes(
+    searchQuery || "",
+    searchContext === "notes" && !!searchQuery && searchQuery.trim().length >= 2
+  );
   const deleteNote = useDeleteNote();
   const deleteFolder = useDeleteFolder();
   const moveNoteMutation = useMoveNote();
@@ -98,11 +112,15 @@ export function NotesListPage() {
   };
 
   // Drag and drop handlers
-  const handleDragStart = (e: React.DragEvent, type: 'note' | 'folder', id: string) => {
-    console.log('Drag start:', type, id);
+  const handleDragStart = (
+    e: React.DragEvent,
+    type: "note" | "folder",
+    id: string
+  ) => {
+    console.log("Drag start:", type, id);
     setDraggedItem({ type, id });
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', '');
+    e.dataTransfer.effectAllowed = "move";
+    e.dataTransfer.setData("text/plain", "");
   };
 
   const handleDragEnd = () => {
@@ -113,10 +131,10 @@ export function NotesListPage() {
   const handleDragOver = (e: React.DragEvent, folderId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
+    e.dataTransfer.dropEffect = "move";
 
     if (draggedItem && draggedItem.id !== folderId) {
-      console.log('Drag over folder:', folderId);
+      console.log("Drag over folder:", folderId);
       setDragOverFolder(folderId);
     }
   };
@@ -132,17 +150,17 @@ export function NotesListPage() {
   const handleDrop = (e: React.DragEvent, targetFolderId: string) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log('Drop event:', draggedItem, 'onto folder:', targetFolderId);
+    console.log("Drop event:", draggedItem, "onto folder:", targetFolderId);
 
     if (!draggedItem || draggedItem.id === targetFolderId) {
-      console.log('Preventing drop: item onto itself');
+      console.log("Preventing drop: item onto itself");
       setDraggedItem(null);
       setDragOverFolder(null);
       return;
     }
 
-    if (draggedItem.type === 'folder') {
-      const targetFolder = folders?.find(f => f.id === targetFolderId);
+    if (draggedItem.type === "folder") {
+      const targetFolder = folders?.find((f) => f.id === targetFolderId);
       if (targetFolder?.parentId === draggedItem.id) {
         setDraggedItem(null);
         setDragOverFolder(null);
@@ -150,15 +168,15 @@ export function NotesListPage() {
       }
     }
 
-    if (draggedItem.type === 'note') {
+    if (draggedItem.type === "note") {
       moveNoteMutation.mutate({
         noteId: draggedItem.id,
-        data: { folderId: targetFolderId }
+        data: { folderId: targetFolderId },
       });
-    } else if (draggedItem.type === 'folder') {
+    } else if (draggedItem.type === "folder") {
       updateFolder.mutate({
         id: draggedItem.id,
-        data: { parentId: targetFolderId }
+        data: { parentId: targetFolderId },
       });
     }
 
@@ -166,7 +184,11 @@ export function NotesListPage() {
     setDragOverFolder(null);
   };
 
-  if (isLoading || foldersLoading) {
+  if (
+    isLoading ||
+    foldersLoading ||
+    (searchQuery && searchContext === "notes" && searchLoading)
+  ) {
     return (
       <div className="container mx-auto p-4 sm:p-6 max-w-7xl">
         <FolderBreadcrumb currentFolderId={folderId} />
@@ -178,14 +200,19 @@ export function NotesListPage() {
 
   if (error) return <Error message="Failed to load notes" onRetry={refetch} />;
 
+  // Use search results if we have a search query, otherwise filter notes locally
   const filteredNotes =
-    notes?.filter(
-      (note) =>
-        note.title.toLowerCase().includes(searchQuery?.toLowerCase() || "") ||
-        contentToPlainText(note.content)
-          .toLowerCase()
-          .includes(searchQuery?.toLowerCase() || "")
-    ) ?? [];
+    searchQuery && searchQuery.trim().length >= 2 && searchContext === "notes"
+      ? searchResults || []
+      : notes?.filter(
+          (note) =>
+            note.title
+              .toLowerCase()
+              .includes(searchQuery?.toLowerCase() || "") ||
+            contentToPlainText(note.content)
+              .toLowerCase()
+              .includes(searchQuery?.toLowerCase() || "")
+        ) ?? [];
 
   const filteredFolders =
     folders?.filter((folder) =>
@@ -355,18 +382,23 @@ export function NotesListPage() {
             {/* Render Folders */}
             {filteredFolders.map((folder) => {
               // Use folder color or fallback to blue
-              const folderColor = folder.color || '#3B82F6';
+              const folderColor = folder.color || "#3B82F6";
 
               return (
                 <Card
                   key={folder.id}
                   className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing ${
-                    draggedItem?.type === 'folder' && draggedItem.id === folder.id ? 'opacity-50' : ''
+                    draggedItem?.type === "folder" &&
+                    draggedItem.id === folder.id
+                      ? "opacity-50"
+                      : ""
                   } ${
-                    dragOverFolder === folder.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''
+                    dragOverFolder === folder.id
+                      ? "ring-2 ring-primary ring-offset-2 bg-primary/5"
+                      : ""
                   }`}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, 'folder', folder.id)}
+                  onDragStart={(e) => handleDragStart(e, "folder", folder.id)}
                   onDragEnd={handleDragEnd}
                   onDragOver={(e) => handleDragOver(e, folder.id)}
                   onDragLeave={(e) => handleDragLeave(e)}
@@ -436,9 +468,8 @@ export function NotesListPage() {
                         {!folder.description && (
                           <p className="text-sm text-muted-foreground/60 italic">
                             {(folder.noteCount || 0) === 0
-                              ? 'Empty folder - add your first note'
-                              : 'Organize your notes and ideas here'
-                            }
+                              ? "Empty folder - add your first note"
+                              : "Organize your notes and ideas here"}
                           </p>
                         )}
                       </div>
@@ -447,12 +478,20 @@ export function NotesListPage() {
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <FileText className="h-4 w-4" />
-                            <span>{folder.noteCount || 0} {(folder.noteCount || 0) === 1 ? 'note' : 'notes'}</span>
+                            <span>
+                              {folder.noteCount || 0}{" "}
+                              {(folder.noteCount || 0) === 1 ? "note" : "notes"}
+                            </span>
                           </div>
                           {(folder.subfolderCount || 0) > 0 && (
                             <div className="flex items-center gap-1.5">
                               <FolderIcon className="h-4 w-4" />
-                              <span>{folder.subfolderCount} {folder.subfolderCount === 1 ? 'folder' : 'folders'}</span>
+                              <span>
+                                {folder.subfolderCount}{" "}
+                                {folder.subfolderCount === 1
+                                  ? "folder"
+                                  : "folders"}
+                              </span>
                             </div>
                           )}
                         </div>
@@ -460,7 +499,12 @@ export function NotesListPage() {
                         <div className="text-sm text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-4 w-4" />
-                            <span>Created {formatDistanceToNow(new Date(folder.createdAt), { addSuffix: true })}</span>
+                            <span>
+                              Created{" "}
+                              {formatDistanceToNow(new Date(folder.createdAt), {
+                                addSuffix: true,
+                              })}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -471,7 +515,7 @@ export function NotesListPage() {
                       className="absolute top-0 right-0 w-20 h-20 rounded-full opacity-5"
                       style={{
                         backgroundColor: folderColor,
-                        transform: 'translate(25%, -25%)'
+                        transform: "translate(25%, -25%)",
                       }}
                     />
                   </CardContent>
@@ -487,19 +531,24 @@ export function NotesListPage() {
                 note.permissions && note.permissions.length > 0;
 
               // Generate content preview
-              const contentPreview = contentToPlainText(note.content || '').trim();
-              const previewText = contentPreview.length > 120
-                ? contentPreview.substring(0, 120) + '...'
-                : contentPreview || 'No content yet';
+              const contentPreview = contentToPlainText(
+                note.content || ""
+              ).trim();
+              const previewText =
+                contentPreview.length > 120
+                  ? contentPreview.substring(0, 120) + "..."
+                  : contentPreview || "No content yet";
 
               return (
                 <Card
                   key={note.id}
                   className={`group relative overflow-hidden bg-gradient-to-br from-card to-card/50 border-0 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 cursor-grab active:cursor-grabbing ${
-                    draggedItem?.type === 'note' && draggedItem.id === note.id ? 'opacity-50' : ''
+                    draggedItem?.type === "note" && draggedItem.id === note.id
+                      ? "opacity-50"
+                      : ""
                   }`}
                   draggable
-                  onDragStart={(e) => handleDragStart(e, 'note', note.id)}
+                  onDragStart={(e) => handleDragStart(e, "note", note.id)}
                   onDragEnd={handleDragEnd}
                   onClick={(e) => {
                     if (!draggedItem && e.detail !== 0) {
@@ -590,7 +639,9 @@ export function NotesListPage() {
                           {hasCollaborators && (
                             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                               <Users className="h-4 w-4" />
-                              <span>{note.permissions.length + 1} collaborators</span>
+                              <span>
+                                {note.permissions.length + 1} collaborators
+                              </span>
                             </div>
                           )}
                         </div>
@@ -598,7 +649,11 @@ export function NotesListPage() {
                         <div className="flex items-center justify-between text-sm text-muted-foreground">
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-4 w-4" />
-                            <span>{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</span>
+                            <span>
+                              {formatDistanceToNow(new Date(note.updatedAt), {
+                                addSuffix: true,
+                              })}
+                            </span>
                           </div>
                           <span className="font-medium">
                             {isOwner ? "You" : note.owner.name}

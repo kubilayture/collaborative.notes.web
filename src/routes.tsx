@@ -10,6 +10,7 @@ import { FriendsPage } from "./pages/friends/FriendsPage";
 import { MessagingPage } from "./pages/messaging/MessagingPage";
 import { ThreadPage } from "./pages/messaging/ThreadPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { UserProfilePage } from "./pages/UserProfilePage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 import { HomePage } from "./pages/HomePage";
@@ -116,6 +117,14 @@ export const RoutesContainer = () => {
           element={
             <ProtectedRoute>
               <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="profile/:userId"
+          element={
+            <ProtectedRoute>
+              <UserProfilePage />
             </ProtectedRoute>
           }
         />

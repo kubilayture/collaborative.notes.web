@@ -1,4 +1,4 @@
-import { Outlet, useNavigate } from "react-router";
+import { Outlet, useNavigate, useLocation } from "react-router";
 import { useSession, signOut } from "../../lib/auth-client";
 import { Button } from "../ui/button";
 import { useState } from "react";
@@ -8,11 +8,7 @@ import { useNotificationToasts } from "../../hooks/useNotificationToasts";
 import { useTheme } from "../../providers/theme-provider";
 import { useCurrentUser } from "../../hooks/profile.hook";
 import { UserAvatar } from "../common/UserAvatar";
-import {
-  Sheet,
-  SheetContent,
-  SheetTrigger,
-} from "../ui/sheet";
+import { Sheet, SheetContent, SheetTrigger } from "../ui/sheet";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -20,15 +16,39 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { Menu, ChevronDown, Sun, Moon, LogOut, Settings, User } from "lucide-react";
+import {
+  Menu,
+  ChevronDown,
+  Sun,
+  Moon,
+  LogOut,
+  Settings,
+  User,
+} from "lucide-react";
 
 const Layout = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { data: session } = useSession();
   const { data: currentUser } = useCurrentUser();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const { theme, setTheme } = useTheme();
+
+  // Determine search context based on current route
+  const getSearchContext = ():
+    | "notes"
+    | "messaging"
+    | "friends"
+    | "invitations"
+    | "all" => {
+    const path = location.pathname;
+    if (path.startsWith("/notes")) return "notes";
+    if (path.startsWith("/messaging")) return "messaging";
+    if (path.startsWith("/friends")) return "friends";
+    if (path.startsWith("/invitations")) return "invitations";
+    return "all";
+  };
 
   useNotificationToasts();
 
@@ -116,7 +136,9 @@ const Layout = () => {
                 <DropdownMenuContent align="end" className="w-56 p-2">
                   <div className="px-2 py-2 mb-2">
                     <p className="text-sm font-medium">{session.user.name}</p>
-                    <p className="text-xs text-muted-foreground">{session.user.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {session.user.email}
+                    </p>
                   </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -163,7 +185,9 @@ const Layout = () => {
 
         {/* Page Content */}
         <main className="flex-1 overflow-auto">
-          <Outlet context={{ searchQuery }} />
+          <Outlet
+            context={{ searchQuery, searchContext: getSearchContext() }}
+          />
         </main>
       </div>
     </div>

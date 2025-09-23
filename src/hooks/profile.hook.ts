@@ -45,6 +45,18 @@ export function useCurrentUser() {
   });
 }
 
+export function useUserProfile(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["users", userId],
+    queryFn: async (): Promise<CombinedUser> => {
+      if (!userId) throw new Error("User ID is required");
+      const response = await api.get(`/users/${userId}`);
+      return response.data;
+    },
+    enabled: !!userId,
+  });
+}
+
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
 
