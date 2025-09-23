@@ -6,6 +6,7 @@ interface UserAvatarProps {
   avatar?: string | null;
   className?: string;
   size?: "sm" | "md" | "lg" | "xl";
+  onClick?: () => void;
 }
 
 const sizeClasses = {
@@ -20,11 +21,12 @@ export function UserAvatar({
   avatar,
   className,
   size = "lg",
+  onClick,
 }: UserAvatarProps) {
   const initials = name.charAt(0).toUpperCase();
 
   return (
-    <Avatar className={cn(sizeClasses[size], className)}>
+    <Avatar className={cn(sizeClasses[size], className)} onClick={onClick}>
       {avatar && <AvatarImage src={avatar} alt={`${name}'s avatar`} />}
       <AvatarFallback className="bg-primary/10 text-primary font-semibold">
         {initials}

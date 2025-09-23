@@ -98,7 +98,7 @@ export function NoteListItem({
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="opacity-0 group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0"
+                    className="opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all duration-200 h-8 w-8 p-0"
                     onClick={(e) => e.stopPropagation()}
                   >
                     <MoreVertical className="h-4 w-4" />

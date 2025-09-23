@@ -7,6 +7,9 @@ export interface Friend {
     id: string;
     name: string;
     email: string;
+    profile?: {
+      avatar?: string | null;
+    };
   };
   friendsSince: string;
   isOnline: boolean;
@@ -24,11 +27,17 @@ export interface FriendRequest {
     id: string;
     name: string;
     email: string;
+    profile?: {
+      avatar?: string | null;
+    };
   };
   addressee: {
     id: string;
     name: string;
     email: string;
+    profile?: {
+      avatar?: string | null;
+    };
   };
   status: "PENDING" | "ACCEPTED" | "REJECTED";
   createdAt: string;
@@ -143,6 +152,25 @@ export const useRemoveFriend = () => {
     },
     onError: (error: any) => {
       const errorMessage = error.response?.data?.message || error.message || "Failed to remove friend";
+      toast.error(errorMessage);
+    },
+  });
+};
+
+export const useCancelFriendRequest = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (requestId: string): Promise<void> => {
+      await api.delete(`/friends/requests/${requestId}/cancel`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["friends"] });
+      queryClient.invalidateQueries({ queryKey: ["friends", "sent"] });
+      toast.success("Friend request cancelled successfully");
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to cancel friend request";
       toast.error(errorMessage);
     },
   });

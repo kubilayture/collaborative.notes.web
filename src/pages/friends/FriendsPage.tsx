@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useSession } from "../../lib/auth-client";
-import { useOutletContext } from "react-router";
+import { useOutletContext, useNavigate } from "react-router";
 import { useSearchUsers } from "../../hooks/search.hook";
 import { toast } from "sonner";
 import {
@@ -11,7 +11,9 @@ import {
   useAcceptFriendRequest,
   useDeclineFriendRequest,
   useRemoveFriend,
+  useCancelFriendRequest,
 } from "../../hooks/friends.hook";
+import { useStartConversation } from "../../hooks/messaging.hook";
 import { useMarkAllRead } from "../../hooks/notifications.hook";
 import { Button } from "../../components/ui/button";
 import {
@@ -36,6 +38,7 @@ import {
 } from "../../components/ui/dropdown-menu";
 import Loading from "../../components/common/Loading";
 import Error from "../../components/common/Error";
+import { UserAvatar } from "../../components/common/UserAvatar";
 import {
   Users,
   UserPlus,
@@ -46,12 +49,15 @@ import {
   UserMinus,
   Clock,
   Send,
+  Eye,
+  MessageCircle,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
 export function FriendsPage() {
   const [email, setEmail] = useState("");
   const { data: session } = useSession();
+  const navigate = useNavigate();
   const { searchQuery, searchContext } = useOutletContext<{
     searchQuery: string;
     searchContext: string;
@@ -80,6 +86,8 @@ export function FriendsPage() {
   const acceptFriendRequest = useAcceptFriendRequest();
   const declineFriendRequest = useDeclineFriendRequest();
   const removeFriend = useRemoveFriend();
+  const cancelFriendRequest = useCancelFriendRequest();
+  const startConversation = useStartConversation();
 
   // Filter friends locally based on search query
   const filteredFriends =
@@ -126,6 +134,30 @@ export function FriendsPage() {
     if (window.confirm("Are you sure you want to remove this friend?")) {
       removeFriend.mutate(friendId);
     }
+  };
+
+  const handleCancelRequest = (requestId: string) => {
+    if (window.confirm("Are you sure you want to cancel this friend request?")) {
+      cancelFriendRequest.mutate(requestId);
+    }
+  };
+
+  const handleViewProfile = (userId: string) => {
+    navigate(`/profile/${userId}`);
+  };
+
+  const handleStartConversation = (friendId: string, friendName: string) => {
+    startConversation.mutate(
+      { participantId: friendId, participantName: friendName },
+      {
+        onSuccess: ({ threadId, isNew }) => {
+          if (isNew) {
+            toast.success(`Started new conversation with ${friendName}`);
+          }
+          navigate(`/messaging/${threadId}`);
+        },
+      }
+    );
   };
 
   const isLoading = friendsLoading || pendingLoading || sentLoading;
@@ -234,14 +266,21 @@ export function FriendsPage() {
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
               {filteredFriends.map((friendItem) => {
                 return (
-                  <Card key={friendItem.friend.id}>
+                  <Card key={friendItem.friend.id} className="group transition-shadow hover:shadow-md">
                     <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <CardTitle className="text-lg">
+                      <div className="flex items-center gap-3">
+                        <UserAvatar
+                          name={friendItem.friend.name}
+                          avatar={friendItem.friend.profile?.avatar}
+                          size="lg"
+                          className="cursor-pointer transition-transform group-hover:scale-105"
+                          onClick={() => handleViewProfile(friendItem.friend.id)}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <CardTitle className="text-lg truncate">
                             {friendItem.friend.name}
                           </CardTitle>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             {friendItem.friend.email}
                           </p>
                           <div className="flex items-center gap-2 mt-1">
@@ -263,6 +302,19 @@ export function FriendsPage() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem
+                              onClick={() => handleViewProfile(friendItem.friend.id)}
+                            >
+                              <Eye className="h-4 w-4 mr-2" />
+                              View Profile
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleStartConversation(friendItem.friend.id, friendItem.friend.name)}
+                              disabled={startConversation.isPending}
+                            >
+                              <MessageCircle className="h-4 w-4 mr-2" />
+                              Message
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
                               onClick={() =>
                                 handleRemoveFriend(friendItem.friend.id)
                               }
@@ -278,7 +330,7 @@ export function FriendsPage() {
                     </CardHeader>
                     <CardContent>
                       <div className="flex flex-col gap-2">
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-xs w-fit">
                           Friends since{" "}
                           {formatDistanceToNow(
                             new Date(friendItem.friendsSince),
@@ -294,6 +346,25 @@ export function FriendsPage() {
                             )}
                           </p>
                         )}
+                        <div className="flex gap-2 mt-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            onClick={() => handleStartConversation(friendItem.friend.id, friendItem.friend.name)}
+                            disabled={startConversation.isPending}
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            Message
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleViewProfile(friendItem.friend.id)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -323,19 +394,26 @@ export function FriendsPage() {
                 <Card key={request.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">
-                          {request.requester.name}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          {request.requester.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Sent{" "}
-                          {formatDistanceToNow(new Date(request.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </p>
+                      <div className="flex items-center gap-3 flex-1">
+                        <UserAvatar
+                          name={request.requester.name}
+                          avatar={request.requester.profile?.avatar}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold truncate">
+                            {request.requester.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {request.requester.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Sent{" "}
+                            {formatDistanceToNow(new Date(request.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </p>
+                        </div>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -387,21 +465,43 @@ export function FriendsPage() {
                 <Card key={request.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-semibold">
-                          {request.addressee.name}
-                        </h4>
-                        <p className="text-sm text-muted-foreground">
-                          {request.addressee.email}
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Sent{" "}
-                          {formatDistanceToNow(new Date(request.createdAt), {
-                            addSuffix: true,
-                          })}
-                        </p>
+                      <div className="flex items-center gap-3 flex-1">
+                        <UserAvatar
+                          name={request.addressee.name}
+                          avatar={request.addressee.profile?.avatar}
+                          size="md"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold truncate">
+                            {request.addressee.name}
+                          </h4>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {request.addressee.email}
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Sent{" "}
+                            {formatDistanceToNow(new Date(request.createdAt), {
+                              addSuffix: true,
+                            })}
+                          </p>
+                        </div>
                       </div>
-                      <Badge variant="outline">Pending</Badge>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline">Pending</Badge>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleCancelRequest(request.id)}
+                          disabled={cancelFriendRequest.isPending}
+                          title="Cancel Request"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <X className="h-4 w-4" />
+                          <span className="hidden sm:inline sm:ml-2">
+                            Cancel
+                          </span>
+                        </Button>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>

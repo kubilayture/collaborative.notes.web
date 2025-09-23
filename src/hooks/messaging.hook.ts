@@ -217,3 +217,41 @@ export const useLeaveThread = () => {
     },
   });
 };
+
+export const useStartConversation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ participantId, participantName }: { participantId: string; participantName: string }): Promise<{ threadId: string; isNew: boolean }> => {
+      // First, get all threads to check if conversation already exists
+      const threadsResponse = await api.get<MessageThread[]>("/messaging/threads");
+      const threads = threadsResponse.data || [];
+
+      // Look for existing conversation with this participant (only 2 participants total)
+      const existingThread = threads.find(thread =>
+        thread.participants.length === 2 &&
+        thread.participants.some(p => p.user.id === participantId)
+      );
+
+      if (existingThread) {
+        return { threadId: existingThread.id, isNew: false };
+      }
+
+      // Create new conversation if none exists
+      const response = await api.post<MessageThread>("/messaging/threads", {
+        name: `${participantName}`, // Use participant's name as the conversation name
+        participantIds: [participantId],
+        initialMessage: undefined
+      } as CreateThreadData);
+
+      return { threadId: response.data.id, isNew: true };
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["messaging", "threads"] });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.message || error.message || "Failed to start conversation";
+      toast.error(errorMessage);
+    },
+  });
+};
